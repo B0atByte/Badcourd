@@ -1,0 +1,1 @@
+<footer class="text-center py-4 text-muted">© <?=date('Y')?> Boat Patthanapong</footer>
