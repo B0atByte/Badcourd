@@ -107,4 +107,4 @@
 
 ## License
 
-This project is for educational purposes.
+Boat Patthanapong
