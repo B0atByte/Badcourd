@@ -8,7 +8,7 @@ require_once __DIR__.'/auth/guard.php';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>BARGAIN SPORT - ระบบจองคอร์ตแบดมินตัน</title>
+    <title>BARGAIN_SPORT - ระบบจองคอร์ตแบดมินตัน</title>
     <script>
         tailwind.config = {
             theme: {
@@ -33,7 +33,7 @@ require_once __DIR__.'/auth/guard.php';
                     <h1 class="text-4xl font-bold text-gray-800 flex items-center gap-3 mb-2">
                         <i class="fas fa-table-tennis text-primary"></i>
                         <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            BARGAIN SPORT
+                            BARGAIN_SPORT
                         </span>
                     </h1>
                     <p class="text-gray-600 text-lg">ระบบจองคอร์ตแบดมินตัน</p>
@@ -62,7 +62,7 @@ require_once __DIR__.'/auth/guard.php';
             </h2>
             <div class="grid md:grid-cols-2 gap-6">
                 <!-- Timetable Card -->
-                <a href="/BARGAIN SPORT/timetable.php" 
+                <a href="/timetable.php" 
                    class="group block bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg hover:shadow-2xl 
                           transform hover:-translate-y-2 transition-all duration-300 overflow-hidden">
                     <div class="p-8 text-white relative">
@@ -83,7 +83,7 @@ require_once __DIR__.'/auth/guard.php';
                 </a>
                 
                 <!-- Booking Card -->
-                <a href="/BARGAIN SPORT/bookings/create.php" 
+                <a href="/bookings/create.php" 
                    class="group block bg-gradient-to-br from-green-400 to-cyan-500 rounded-2xl shadow-lg hover:shadow-2xl 
                           transform hover:-translate-y-2 transition-all duration-300 overflow-hidden">
                     <div class="p-8 text-white relative">
@@ -114,7 +114,7 @@ require_once __DIR__.'/auth/guard.php';
             </h2>
             <div class="grid md:grid-cols-3 gap-6">
                 <!-- Courts Management -->
-                <a href="/BARGAIN SPORT/admin/courts.php" 
+                <a href="/admin/courts.php" 
                    class="group block bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl shadow-lg hover:shadow-2xl 
                           transform hover:-translate-y-2 transition-all duration-300 overflow-hidden">
                     <div class="p-6 text-white relative">
@@ -131,7 +131,7 @@ require_once __DIR__.'/auth/guard.php';
                 </a>
                 
                 <!-- Pricing -->
-                <a href="/BARGAIN SPORT/admin/pricing.php" 
+                <!-- <a href="/admin/pricing.php" 
                    class="group block bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl shadow-lg hover:shadow-2xl 
                           transform hover:-translate-y-2 transition-all duration-300 overflow-hidden">
                     <div class="p-6 text-white relative">
@@ -145,10 +145,10 @@ require_once __DIR__.'/auth/guard.php';
                             <p class="text-pink-100 text-sm">กำหนดราคาค่าเช่าคอร์ต</p>
                         </div>
                     </div>
-                </a>
+                </a> -->
                 
                 <!-- Reports -->
-                <a href="/BARGAIN SPORT/reports/export_excel.php" 
+                <a href="/reports/export_excel.php" 
                    class="group block bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl shadow-lg hover:shadow-2xl 
                           transform hover:-translate-y-2 transition-all duration-300 overflow-hidden">
                     <div class="p-6 text-white relative">

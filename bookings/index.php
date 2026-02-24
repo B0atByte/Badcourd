@@ -10,7 +10,7 @@ $rows=$pdo->query("SELECT b.*, c.court_no FROM bookings b JOIN courts c ON b.cou
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<title>การจอง - BARGAIN SPORT</title>
+<title>การจอง - BARGAIN_SPORT</title>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
 <?php include __DIR__.'/../includes/header.php'; ?>

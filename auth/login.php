@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $user['username'],
             'role' => $user['role'],
         ];
-        header('Location: /BARGAIN SPORT/index.php');
+        header('Location:/index.php');
         exit;
     } else {
         $error = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="text-center mb-8">
             <div class="flex justify-center mb-4">
                 <!-- ✅ เปลี่ยนจาก icon เป็นโลโก้ -->
-                <img src="/BARGAIN SPORT/logo/BPL.png" alt="BPL Logo" 
+                <img src="/logo/BPL.png" alt="BPL Logo" 
                      class="w-20 h-20 object-contain rounded-2xl shadow-md border border-gray-200">
             </div>
             <h1 class="text-3xl font-bold text-gray-800">BARGAIN SPORT SYSTEM</h1>
@@ -103,9 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="relative my-6">
                 <div class="absolute inset-0 flex items-center">
                     <div class="w-full border-t border-gray-200"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                    <span class="px-4 bg-white text-gray-500">หรือ</span>
                 </div>
             </div>
         </div>

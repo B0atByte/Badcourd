@@ -5,19 +5,23 @@ require_once __DIR__ . '/config/db.php'; // เชื่อมต่อฐาน
 // วันที่ที่ต้องการแสดง (ถ้าไม่มีให้ใช้วันที่ปัจจุบัน)
 $date = $_GET['date'] ?? date('Y-m-d');
 
-// ดึงข้อมูลคอร์ดทั้งหมด
-$courts = $pdo->query('SELECT * FROM courts ORDER BY court_no')->fetchAll();
+// ดึงข้อมูลคอร์ตทั้งหมด แยกตามประเภท
+$courts = $pdo->query('SELECT * FROM courts ORDER BY court_type DESC, vip_room_name ASC, court_no ASC')->fetchAll();
+
+// แยกคอร์ตตามประเภท
+$vipCourts = array_filter($courts, fn($c) => $c['court_type'] === 'vip' || $c['is_vip'] == 1);
+$normalCourts = array_filter($courts, fn($c) => $c['court_type'] === 'normal' || $c['is_vip'] == 0);
 
 // ดึงจองของวันนั้นทั้งหมด
 $startDay = $date . ' 00:00:00';
 $endDay   = $date . ' 23:59:59';
 $stmt = $pdo->prepare("
-    SELECT b.*, c.court_no 
+    SELECT b.*, c.court_no, c.court_type, c.vip_room_name, c.is_vip
     FROM bookings b 
     JOIN courts c ON b.court_id = c.id
     WHERE b.status = 'booked' 
       AND b.start_datetime BETWEEN ? AND ? 
-    ORDER BY c.court_no, b.start_datetime
+    ORDER BY c.court_type DESC, c.vip_room_name ASC, c.court_no, b.start_datetime
 ");
 $stmt->execute([$startDay, $endDay]);
 $bookings = $stmt->fetchAll();
@@ -60,6 +64,16 @@ $dayNum = $dateObj->format('d');
 $monthName = $thaiMonths[(int)$dateObj->format('n')];
 $year = $dateObj->format('Y') + 543;
 $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
+
+// ฟังก์ชันแสดงชื่อคอร์ต/ห้อง
+function getCourtDisplayName($court) {
+    $isVip = ($court['court_type'] === 'vip' || $court['is_vip'] == 1);
+    if ($isVip) {
+        return $court['vip_room_name'] ?? 'ห้อง VIP';
+    } else {
+        return 'คอร์ต ' . $court['court_no'];
+    }
+}
 ?>
 <!doctype html>
 <html lang="th">
@@ -70,67 +84,80 @@ $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <title>ตารางคอร์ต - <?= htmlspecialchars($date) ?></title>
   <style>
-    .time-slot {
+    .booking-card {
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       transition: all 0.2s ease;
+      cursor: pointer;
     }
-    .time-slot:hover {
-      transform: scale(1.05);
-      z-index: 10;
+    .booking-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 50;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
+    .booking-booked {
+      background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+      color: white;
     }
-    .modal.active {
+    .booking-vip {
+      background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%);
+      color: #78350f;
+    }
+    .booking-empty {
+      background: linear-gradient(135deg, #4ade80 0%, #86efac 100%);
+      color: white;
+      cursor: default;
+    }
+    .court-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+      border: 2px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    .court-card:hover {
+      box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+      border-color: #d1d5db;
+    }
+    .court-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
       display: flex;
       align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.2s ease;
+      gap: 10px;
     }
-    .modal-content {
-      animation: slideUp 0.3s ease;
+    .court-title.vip {
+      background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    .bookings-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      grid-auto-flow: row;
     }
-    @keyframes slideUp {
-      from { 
-        transform: translateY(20px);
-        opacity: 0;
-      }
-      to { 
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-    .time-header {
-      position: sticky;
-      top: 0;
-      z-index: 15;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .court-header {
-      position: sticky;
-      left: 0;
-      z-index: 20;
-    }
-    .hour-group {
-      border-left: 2px solid #cbd5e0;
+    .bookings-list .booking-empty {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
     }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
 <?php include __DIR__ . '/includes/header.php'; ?>
 
-<div class="container mx-auto px-4 py-8 max-w-full">
+<div class="container mx-auto px-4 py-8 max-w-6xl">
   <!-- Header Section -->
   <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -163,7 +190,7 @@ $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
           <span>แสดงตาราง</span>
         </button>
         
-        <a href="/BARGAIN SPORT/bookings/create.php" 
+        <a href="/bookings/create.php" 
            class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium 
                   hover:from-green-600 hover:to-emerald-700 hover:shadow-lg transform hover:scale-105 
                   transition-all duration-300 flex items-center justify-center gap-2">
@@ -175,95 +202,147 @@ $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
   </div>
 
   <!-- Legend -->
-  <div class="bg-white rounded-xl shadow-md p-4 mb-6 flex flex-wrap gap-4 items-center justify-center">
+  <div class="bg-white rounded-xl shadow-md p-4 mb-6 flex flex-wrap gap-6 items-center justify-center">
     <div class="flex items-center gap-2">
-      <div class="w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-sm"></div>
-      <span class="text-sm font-medium text-gray-700">ว่าง</span>
+      <div class="px-4 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-lg text-sm font-medium">ว่าง</div>
     </div>
     <div class="flex items-center gap-2">
-      <div class="w-6 h-6 bg-gradient-to-br from-red-400 to-pink-500 rounded-lg shadow-sm"></div>
-      <span class="text-sm font-medium text-gray-700">จองแล้ว (คลิกดูรายละเอียด)</span>
+      <div class="px-4 py-2 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-lg text-sm font-medium">จองแล้ว</div>
     </div>
     <div class="flex items-center gap-2">
-      <i class="fas fa-info-circle text-blue-500"></i>
-      <span class="text-sm text-gray-600">แสดงเวลาละเอียด 30 นาที / ช่อง</span>
+      <div class="px-4 py-2 bg-gradient-to-r from-yellow-400 to-amber-400 text-amber-900 rounded-lg text-sm font-medium">👑 VIP</div>
     </div>
   </div>
 
-  <!-- Timetable -->
-  <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="time-header">
-          <tr>
-            <th class="court-header px-6 py-4 text-left font-bold text-lg text-white border-r border-purple-400 bg-gradient-to-r from-indigo-600 to-purple-600">
-              <i class="fas fa-warehouse mr-2"></i>คอร์ต
-            </th>
-            <?php for ($h = 0; $h < 24; $h++): ?>
-              <th colspan="2" class="px-2 py-3 text-center font-bold text-white border-l-2 border-purple-400 min-w-[140px]">
-                <div class="flex flex-col items-center">
-                  <i class="fas fa-clock text-xs mb-1 opacity-75"></i>
-                  <span class="text-base"><?= sprintf('%02d:00', $h) ?></span>
-                </div>
-              </th>
-            <?php endfor; ?>
-          </tr>
-          <tr class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs">
-            <th class="court-header border-r border-purple-300"></th>
-            <?php for ($h = 0; $h < 24; $h++): ?>
-              <th class="px-1 py-2 border-l border-purple-300 font-normal">:00</th>
-              <th class="px-1 py-2 border-l border-purple-200 font-normal">:30</th>
-            <?php endfor; ?>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <?php foreach ($courts as $c): ?>
-            <tr class="hover:bg-gray-50 transition-colors">
-              <th class="court-header px-6 py-4 text-left font-bold text-gray-800 border-r border-gray-300 bg-gradient-to-r from-gray-100 to-gray-50">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-md">
-                    <?= htmlspecialchars($c['court_no']) ?>
-                  </div>
-                  <span class="text-base">คอร์ต <?= htmlspecialchars($c['court_no']) ?></span>
-                </div>
-              </th>
-              <?php for ($slot = 0; $slot < 48; $slot++): 
-                $name = $grid[$c['id']][$slot]; 
-                $details = $gridDetails[$c['id']][$slot];
-                $isBusy = !empty($name);
-                $hour = floor($slot / 2);
-                $min = ($slot % 2) * 30;
-                $timeStr = sprintf('%02d:%02d', $hour, $min);
-                $isHourStart = ($slot % 2 == 0);
-                $borderClass = $isHourStart ? 'border-l-2 border-gray-300' : 'border-l border-gray-200';
-              ?>
-                <td class="px-2 py-3 text-center text-xs <?= $borderClass ?> min-w-[70px]">
-                  <?php if ($isBusy && $details): ?>
-                    <div class="time-slot bg-gradient-to-br from-red-400 to-pink-500 text-white rounded-lg px-2 py-2 font-medium shadow-sm 
-                              hover:shadow-lg cursor-pointer" 
-                         onclick="showBookingDetails(<?= htmlspecialchars(json_encode($details)) ?>, '<?= $timeStr ?>', '<?= htmlspecialchars($c['court_no']) ?>')">
-                      <i class="fas fa-user-check text-[10px] mb-1"></i>
-                      <div class="text-[10px] font-semibold truncate">
-                        <?= htmlspecialchars($name) ?>
-                      </div>
-                    </div>
-                  <?php else: ?>
-                    <div class="time-slot bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-lg px-2 py-2 font-medium shadow-sm 
-                              hover:shadow-md hover:scale-105 transition-all opacity-70 hover:opacity-100">
-                      <i class="fas fa-check-circle text-[10px]"></i>
-                    </div>
-                  <?php endif; ?>
-                </td>
-              <?php endfor; ?>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+  <!-- VIP Rooms Section -->
+  <?php if (count($vipCourts) > 0): ?>
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+      <i class="fas fa-crown text-amber-500"></i>
+      ห้อง VIP
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <?php foreach ($vipCourts as $c): 
+        $displayName = getCourtDisplayName($c);
+        $courtsBookingsForDay = array_filter($grid[$c['id']], fn($b) => !empty($b));
+      ?>
+      <div class="court-card border-amber-200">
+        <div class="court-title vip">
+          <i class="fas fa-door-open text-amber-500"></i>
+          <?= htmlspecialchars($displayName) ?>
+        </div>
+        <?php if ($c['vip_price']): ?>
+        <div class="text-sm text-amber-600 font-semibold mb-4 pb-4 border-b border-amber-100">
+          <i class="fas fa-tag"></i> <?= number_format($c['vip_price'], 0) ?> ฿/ชม.
+        </div>
+        <?php endif; ?>
+        
+        <div class="bookings-list">
+          <?php 
+          $displayedBookings = [];
+          for ($slot = 0; $slot < 48; $slot++):
+            $name = $grid[$c['id']][$slot];
+            $details = $gridDetails[$c['id']][$slot];
+            $hour = floor($slot / 2);
+            $min = ($slot % 2) * 30;
+            $timeStr = sprintf('%02d:%02d', $hour, $min);
+            
+            if (!empty($name) && $details && !in_array($details['id'], $displayedBookings)):
+              $displayedBookings[] = $details['id'];
+              $startDate = new DateTime($details['start_datetime']);
+              $endDate = new DateTime('@' . ($startDate->getTimestamp() + ($details['duration_hours'] * 60 * 60)));
+              $timeStartStr = $startDate->format('H:i');
+              $timeEndStr = $endDate->format('H:i');
+          ?>
+            <div class="booking-card booking-booked" 
+                 onclick="showBookingDetails(<?= htmlspecialchars(json_encode($details)) ?>, '<?= $timeStartStr ?>', '<?= htmlspecialchars($displayName) ?>', true)">
+              <div class="flex-1">
+                <div><i class="fas fa-user-check mr-2"></i><?= htmlspecialchars($name) ?></div>
+                <div class="text-[11px] opacity-90 mt-1"><?= $timeStartStr ?> - <?= $timeEndStr ?></div>
+              </div>
+              <i class="fas fa-info-circle text-white/70 ml-2 flex-shrink-0"></i>
+            </div>
+          <?php 
+            endif;
+          endfor;
+          
+          if (empty($displayedBookings)):
+          ?>
+            <div class="booking-card booking-empty">
+              <div><i class="fas fa-check-circle mr-2"></i>ทั้งหมดว่าง</div>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endforeach; ?>
     </div>
   </div>
+  <?php endif; ?>
+
+  <!-- Normal Courts Section -->
+  <?php if (count($normalCourts) > 0): ?>
+  <div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+      <i class="fas fa-table-tennis text-blue-600"></i>
+      คอร์ตปกติ
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <?php foreach ($normalCourts as $c): 
+        $displayName = getCourtDisplayName($c);
+        $courtsBookingsForDay = array_filter($grid[$c['id']], fn($b) => !empty($b));
+      ?>
+      <div class="court-card">
+        <div class="court-title">
+          <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+            <?= htmlspecialchars($c['court_no']) ?>
+          </div>
+          <?= htmlspecialchars($displayName) ?>
+        </div>
+        
+        <div class="bookings-list">
+          <?php 
+          $displayedBookings = [];
+          for ($slot = 0; $slot < 48; $slot++):
+            $name = $grid[$c['id']][$slot];
+            $details = $gridDetails[$c['id']][$slot];
+            $hour = floor($slot / 2);
+            $min = ($slot % 2) * 30;
+            $timeStr = sprintf('%02d:%02d', $hour, $min);
+            
+            if (!empty($name) && $details && !in_array($details['id'], $displayedBookings)):
+              $displayedBookings[] = $details['id'];
+              $startDate = new DateTime($details['start_datetime']);
+              $endDate = new DateTime('@' . ($startDate->getTimestamp() + ($details['duration_hours'] * 60 * 60)));
+              $timeStartStr = $startDate->format('H:i');
+              $timeEndStr = $endDate->format('H:i');
+          ?>
+            <div class="booking-card booking-booked" 
+                 onclick="showBookingDetails(<?= htmlspecialchars(json_encode($details)) ?>, '<?= $timeStartStr ?>', '<?= htmlspecialchars($displayName) ?>', false)">
+              <div class="flex-1">
+                <div><i class="fas fa-user-check mr-2"></i><?= htmlspecialchars($name) ?></div>
+                <div class="text-[11px] opacity-90 mt-1"><?= $timeStartStr ?> - <?= $timeEndStr ?></div>
+              </div>
+              <i class="fas fa-info-circle text-white/70 ml-2 flex-shrink-0"></i>
+            </div>
+          <?php 
+            endif;
+          endfor;
+          
+          if (empty($displayedBookings)):
+          ?>
+            <div class="booking-card booking-empty">
+              <div><i class="fas fa-check-circle mr-2"></i>ทั้งหมดว่าง</div>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- Stats Card -->
-  <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
     <?php
     $totalSlots = count($courts) * 48;
     $bookedSlots = 0;
@@ -314,17 +393,21 @@ $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Occupancy Rate -->
-  <div class="mt-4 bg-white rounded-xl shadow-md p-6">
-    <div class="flex items-center justify-between mb-3">
-      <span class="text-gray-700 font-medium">อัตราการใช้งาน</span>
-      <span class="text-2xl font-bold text-blue-600"><?= $occupancyRate ?>%</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-      <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500" 
-           style="width: <?= $occupancyRate ?>%"></div>
+    
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm mb-1">อัตราการใช้</p>
+          <p class="text-3xl font-bold text-blue-600"><?= $occupancyRate ?>%</p>
+          <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all" 
+                 style="width: <?= $occupancyRate ?>%"></div>
+          </div>
+        </div>
+        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center">
+          <i class="fas fa-chart-pie text-white text-2xl"></i>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -344,11 +427,11 @@ $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
     
     <div class="space-y-4">
       <!-- Court & Time -->
-      <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
+      <div id="modalCourtBadge" class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
             <p class="text-sm text-gray-600 mb-1">
-              <i class="fas fa-warehouse text-blue-500 mr-1"></i> คอร์ต
+              <i class="fas fa-warehouse text-blue-500 mr-1"></i> <span id="modalCourtLabel">คอร์ต</span>
             </p>
             <p class="text-lg font-bold text-gray-800" id="modalCourt">-</p>
           </div>
@@ -435,32 +518,75 @@ $thaiDate = "วัน$dayName ที่ $dayNum $monthName $year";
   </div>
 </div>
 
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 50;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+  }
+  .modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-content {
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { 
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to { 
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+</style>
+
 <script>
-function showBookingDetails(booking, timeStr, courtNo) {
+function showBookingDetails(booking, timeStr, courtName, isVip) {
   const modal = document.getElementById('bookingModal');
+  const modalCourtBadge = document.getElementById('modalCourtBadge');
+  const modalCourtLabel = document.getElementById('modalCourtLabel');
   
-  // Format datetime
+  if (isVip) {
+    modalCourtBadge.className = 'bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border-2 border-amber-200';
+    modalCourtLabel.innerHTML = '<i class="fas fa-crown text-amber-500 mr-1"></i> ห้อง VIP';
+  } else {
+    modalCourtBadge.className = 'bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4';
+    modalCourtLabel.innerHTML = '<i class="fas fa-warehouse text-blue-500 mr-1"></i> คอร์ต';
+  }
+  
   const startDate = new Date(booking.start_datetime);
   const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
                       'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   const dateStr = `${startDate.getDate()} ${thaiMonths[startDate.getMonth()]} ${startDate.getFullYear() + 543}`;
   const timeStartStr = startDate.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'});
   
-  // Calculate end time
   const endDate = new Date(startDate.getTime() + (booking.duration_hours * 60 * 60 * 1000));
   const timeEndStr = endDate.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'});
   
-  // Update modal content
-  document.getElementById('modalCourt').textContent = `คอร์ต ${courtNo}`;
+  document.getElementById('modalCourt').textContent = courtName;
   document.getElementById('modalTime').textContent = `${timeStartStr} - ${timeEndStr}`;
   document.getElementById('modalCustomer').textContent = booking.customer_name || '-';
   document.getElementById('modalPhone').textContent = booking.customer_phone || '-';
   document.getElementById('modalDate').textContent = dateStr;
   document.getElementById('modalDuration').textContent = `${booking.duration_hours} ชั่วโมง`;
   document.getElementById('modalPrice').textContent = `฿${parseFloat(booking.total_price).toLocaleString()}`;
-  document.getElementById('modalEditLink').href = `/BARGAIN SPORT/bookings/update.php?id=${booking.id}`;
+  document.getElementById('modalEditLink').href = `/BARGAIN_SPORT/bookings/update.php?id=${booking.id}`;
   
-  // Show modal
   modal.classList.add('active');
 }
 
@@ -469,14 +595,12 @@ function closeModal() {
   modal.classList.remove('active');
 }
 
-// Close modal when clicking outside
 document.getElementById('bookingModal').addEventListener('click', function(e) {
   if (e.target === this) {
     closeModal();
   }
 });
 
-// Close modal with Escape key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeModal();

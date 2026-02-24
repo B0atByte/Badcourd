@@ -21,15 +21,15 @@ if (session_status() === PHP_SESSION_NONE) {
 
       <!-- ✅ Logo/Brand -->
       <div class="flex items-center">
-        <a href="/BARGAIN SPORT/" class="flex items-center gap-2 group">
+        <a href="/" class="flex items-center gap-2 group">
           <!-- เปลี่ยนจาก icon เป็นโลโก้ -->
           <div class="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <img src="/BARGAIN SPORT/logo/BPL.png" alt="BPL Logo" class="w-10 h-10 object-contain rounded-md shadow-sm">
+            <img src="/logo/BPL.png" alt="BPL Logo" class="w-10 h-10 object-contain rounded-md shadow-sm">
           </div>
 
           <div class="flex flex-col leading-tight">
             <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              BARGAIN SPORT
+              BARGAIN_SPORT
             </span>
             <span class="text-sm text-gray-500 -mt-1">ระบบจองคอร์ตแบดมินตัน</span>
           </div>
@@ -38,36 +38,30 @@ if (session_status() === PHP_SESSION_NONE) {
 
       <!-- Desktop Menu -->
       <div class="hidden md:flex items-center space-x-1">
-        <a href="/BARGAIN SPORT/timetable.php" 
+        <a href="/timetable.php" 
            class="px-4 py-2 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 
                   hover:text-blue-600 transition-all duration-300 font-medium flex items-center gap-2">
           <i class="fas fa-calendar-alt text-sm"></i>
           <span>ตารางคอร์ต</span>
         </a>
         
-        <a href="/BARGAIN SPORT/bookings/" 
+        <a href="/bookings/" 
            class="px-4 py-2 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-cyan-50 
                   hover:text-green-600 transition-all duration-300 font-medium flex items-center gap-2">
           <i class="fas fa-clipboard-list text-sm"></i>
           <span>การจอง</span>
         </a>
         
-        <a href="/BARGAIN SPORT/admin/courts.php" 
+        <a href="/admin/courts.php" 
            class="px-4 py-2 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 
                   hover:text-slate-600 transition-all duration-300 font-medium flex items-center gap-2">
           <i class="fas fa-warehouse text-sm"></i>
           <span>คอร์ต</span>
         </a>
         
-        <a href="/BARGAIN SPORT/admin/pricing.php" 
-           class="px-4 py-2 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 
-                  hover:text-pink-600 transition-all duration-300 font-medium flex items-center gap-2">
-          <i class="fas fa-tag text-sm"></i>
-          <span>ราคา</span>
-        </a>
 
         <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
-        <a href="/BARGAIN SPORT/admin/users.php" 
+        <a href="/admin/users.php" 
            class="px-4 py-2 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 
                   hover:text-purple-600 transition-all duration-300 font-medium flex items-center gap-2">
           <i class="fas fa-users text-sm"></i>
@@ -91,7 +85,7 @@ if (session_status() === PHP_SESSION_NONE) {
           </div>
           <?php endif; ?>
 
-          <a href="/BARGAIN SPORT/auth/logout.php" 
+          <a href="/auth/logout.php" 
              class="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg font-medium 
                     hover:from-red-600 hover:to-pink-700 hover:shadow-lg transform hover:scale-105 
                     transition-all duration-300 flex items-center gap-2">
@@ -130,27 +124,27 @@ if (session_status() === PHP_SESSION_NONE) {
       </div>
       <?php endif; ?>
 
-      <a href="/BARGAIN SPORT/timetable.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+      <a href="/timetable.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
         <i class="fas fa-calendar-alt text-blue-600 w-5"></i><span class="font-medium">ตารางคอร์ต</span>
       </a>
-      <a href="/BARGAIN SPORT/bookings/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+      <a href="/bookings/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
         <i class="fas fa-clipboard-list text-green-600 w-5"></i><span class="font-medium">การจอง</span>
       </a>
-      <a href="/BARGAIN SPORT/admin/courts.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+      <a href="/admin/courts.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
         <i class="fas fa-warehouse text-slate-600 w-5"></i><span class="font-medium">คอร์ต</span>
       </a>
-      <a href="/BARGAIN SPORT/admin/pricing.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+      <a href="/admin/pricing.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
         <i class="fas fa-tag text-pink-600 w-5"></i><span class="font-medium">ราคา</span>
       </a>
 
       <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
-      <a href="/BARGAIN SPORT/admin/users.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+      <a href="/admin/users.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-all">
         <i class="fas fa-users text-purple-600 w-5"></i><span class="font-medium">ผู้ใช้งาน</span>
       </a>
       <?php endif; ?>
 
       <div class="pt-2 mt-2 border-t border-gray-200">
-        <a href="/BARGAIN SPORT/auth/logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 
+        <a href="/auth/logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 
                   text-white font-medium hover:from-red-600 hover:to-pink-700 transition-all">
           <i class="fas fa-sign-out-alt w-5"></i><span>ออกจากระบบ</span>
         </a>

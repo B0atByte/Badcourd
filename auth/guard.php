@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user'])) {
-header('Location: /BARGAIN SPORT/auth/login.php');
+header('Location: /auth/login.php');
 exit;
 }
 function require_role($roles = []) {

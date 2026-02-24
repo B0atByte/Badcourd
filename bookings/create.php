@@ -8,11 +8,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (!isset($_SESSION['user'])) {
-    header('Location: /BARGAIN SPORT/auth/login.php');
+    header('Location: /auth/login.php');
     exit;
 }
 
-$courts = $pdo->query("SELECT * FROM courts WHERE status <> 'Maintenance' ORDER BY court_no")->fetchAll();
+// ดึงข้อมูลคอร์ตทั้งหมด แยกตามประเภท
+$courts = $pdo->query("SELECT * FROM courts WHERE status <> 'Maintenance' ORDER BY court_type DESC, vip_room_name ASC, court_no")->fetchAll();
 $success = $error = '';
 
 $posted_court_id = '';
@@ -44,7 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (has_overlap($court_id, $start, $hours)) {
         $error = 'เวลานี้มีการจองอยู่แล้ว';
     } else {
-        $pph = pick_price_per_hour($start);
+        // ดึงข้อมูลคอร์ตเพื่อเช็คว่าเป็น VIP หรือไม่
+        $courtInfo = $pdo->prepare('SELECT court_type, is_vip, vip_price, normal_price FROM courts WHERE id = ?');
+        $courtInfo->execute([$court_id]);
+        $court = $courtInfo->fetch();
+        
+        // ถ้าเป็น VIP ใช้ราคา VIP ถ้าไม่ใช้ pick_price_per_hour หรือ normal_price
+        $isVip = ($court['court_type'] === 'vip' || $court['is_vip'] == 1);
+        if ($isVip && $court['vip_price'] > 0) {
+            $pph = $court['vip_price'];
+        } elseif (!$isVip && $court['normal_price'] > 0) {
+            // ถ้าคอร์ตปกติมีราคาคงที่ ให้ใช้ราคานั้น
+            $pph = $court['normal_price'];
+        } else {
+            // ใช้ราคาตามช่วงเวลา
+            $pph = pick_price_per_hour($start);
+        }
+        
         $total = compute_total($pph, $hours, $discount);
         $created_by = $_SESSION['user']['id'];
 
@@ -70,14 +87,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$currentStart = new DateTime("$posted_date $posted_start_time");
-$currentPricePerHour = pick_price_per_hour($currentStart);
+// คำนวณราคาเริ่มต้น
+$currentPricePerHour = pick_price_per_hour(new DateTime("$posted_date $posted_start_time"));
+$isVipSelected = false;
+$selectedCourtName = '';
+
+if ($posted_court_id) {
+    $courtCheck = $pdo->prepare('SELECT court_type, is_vip, vip_price, vip_room_name, court_no FROM courts WHERE id = ?');
+    $courtCheck->execute([$posted_court_id]);
+    $selectedCourt = $courtCheck->fetch();
+    
+    if ($selectedCourt) {
+        $isVipSelected = ($selectedCourt['court_type'] === 'vip' || $selectedCourt['is_vip'] == 1);
+        if ($isVipSelected) {
+            $currentPricePerHour = $selectedCourt['vip_price'] ?? $currentPricePerHour;
+            $selectedCourtName = $selectedCourt['vip_room_name'] ?? 'ห้อง VIP';
+        } else {
+            $selectedCourtName = 'คอร์ต ' . $selectedCourt['court_no'];
+        }
+    }
+}
+
 $currentSubtotal = $currentPricePerHour * $posted_hours;
 $currentTotal = max(0, $currentSubtotal - $posted_discount);
 
-$matchedRule = pick_pricing_rule($currentStart);
+$matchedRule = pick_pricing_rule(new DateTime("$posted_date $posted_start_time"));
 $matchedRuleDisplay = null;
-if ($matchedRule) {
+if ($matchedRule && !$isVipSelected) {
     $matchedRuleDisplay = [
         'day_type' => $matchedRule['day_type'],
         'day_text' => $matchedRule['day_type'] === 'weekday' ? 'จันทร์-ศุกร์' : 'เสาร์-อาทิตย์',
@@ -87,8 +123,22 @@ if ($matchedRule) {
     ];
 }
 
+$currentStart = new DateTime("$posted_date $posted_start_time");
 $dayOfWeek = (int)$currentStart->format('w');
 $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาทิตย์' : 'จันทร์-ศุกร์';
+
+// ฟังก์ชันแสดงชื่อคอร์ต
+function getCourtDisplayName($court) {
+    $isVip = ($court['court_type'] === 'vip' || $court['is_vip'] == 1);
+    if ($isVip) {
+        $name = $court['vip_room_name'] ?? 'ห้อง VIP';
+        $icon = '👑';
+        $price = $court['vip_price'] > 0 ? ' (' . number_format($court['vip_price'], 0) . ' ฿/ชม.)' : '';
+        return "$icon $name$price";
+    } else {
+        return '🏸 คอร์ต ' . $court['court_no'];
+    }
+}
 ?>
 <!doctype html>
 <html lang="th">
@@ -97,9 +147,13 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>จองคอร์ต - BARGAIN SPORT</title>
+    <title>จองคอร์ต - BARGAIN_SPORT</title>
     <style>
         body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
+        .court-option-vip {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -116,7 +170,7 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
             </div>
 
             <?php if ($success): ?>
-            <div class="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-lg mb-6 shadow-md">
+            <div class="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-lg mb-6 shadow-md animate-pulse">
                 <div class="flex items-center">
                     <i class="fas fa-check-circle text-2xl mr-3"></i>
                     <span class="font-medium"><?= htmlspecialchars($success) ?></span>
@@ -143,17 +197,48 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                 <div class="md:col-span-2">
                                     <label class="flex items-center gap-2 text-gray-700 font-semibold mb-2">
                                         <i class="fas fa-warehouse text-purple-600"></i>
-                                        เลือกคอร์ต
+                                        เลือกคอร์ต / ห้อง VIP
                                     </label>
-                                    <select name="court_id" required
-                                            class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
-                                        <?php foreach ($courts as $c): ?>
-                                            <option value="<?= $c['id'] ?>" <?= $posted_court_id == $c['id'] ? 'selected' : '' ?>>
-                                                คอร์ต <?= htmlspecialchars($c['court_no']) ?> 
-                                                (<?= htmlspecialchars($c['status']) ?>)
-                                            </option>
-                                        <?php endforeach; ?>
+                                    <select name="court_id" id="courtSelect" required onchange="updatePriceOnCourtChange()"
+                                            class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none text-base">
+                                        <?php 
+                                        // แยก VIP และปกติ
+                                        $vipCourts = array_filter($courts, fn($c) => $c['court_type'] === 'vip' || $c['is_vip'] == 1);
+                                        $normalCourts = array_filter($courts, fn($c) => $c['court_type'] === 'normal' || $c['is_vip'] == 0);
+                                        
+                                        if (count($vipCourts) > 0): ?>
+                                            <optgroup label="🌟 ห้อง VIP" class="font-bold">
+                                            <?php foreach ($vipCourts as $c): ?>
+                                                <option value="<?= $c['id'] ?>" 
+                                                        data-is-vip="1"
+                                                        data-vip-price="<?= $c['vip_price'] ?? 0 ?>"
+                                                        data-court-name="<?= htmlspecialchars($c['vip_room_name'] ?? 'ห้อง VIP') ?>"
+                                                        <?= $posted_court_id == $c['id'] ? 'selected' : '' ?>
+                                                        class="court-option-vip">
+                                                    <?= getCourtDisplayName($c) ?> (<?= htmlspecialchars($c['status']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                            </optgroup>
+                                        <?php endif; ?>
+                                        
+                                        <?php if (count($normalCourts) > 0): ?>
+                                            <optgroup label="🏸 คอร์ตปกติ">
+                                            <?php foreach ($normalCourts as $c): ?>
+                                                <option value="<?= $c['id'] ?>" 
+                                                        data-is-vip="0"
+                                                        data-court-no="<?= $c['court_no'] ?>"
+                                                        data-normal-price="<?= $c['normal_price'] ?? 0 ?>"
+                                                        <?= $posted_court_id == $c['id'] ? 'selected' : '' ?>>
+                                                    <?= getCourtDisplayName($c) ?> (<?= htmlspecialchars($c['status']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                            </optgroup>
+                                        <?php endif; ?>
                                     </select>
+                                    <p class="text-xs text-gray-600 mt-2 flex items-center gap-1">
+                                        <i class="fas fa-crown text-amber-500"></i>
+                                        <span>ห้อง VIP มีราคาพิเศษตามที่กำหนด</span>
+                                    </p>
                                 </div>
 
                                 <div>
@@ -175,7 +260,12 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                     <input type="tel" name="customer_phone"
                                            value="<?= htmlspecialchars($posted_customer_phone) ?>"
                                            placeholder="0XX-XXX-XXXX"
-                                           class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
+                                           maxlength="10"
+                                           pattern="[0-9]{10}"
+                                           title="กรุณาใส่เบอร์โทรศัพท์ 10 เลข (เฉพาะตัวเลข)"
+                                           class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
+                                    <p class="text-xs text-gray-500 mt-2">📱 ใส่เบอร์โทร 10 เลข (เช่น 0812345678)</p>
                                 </div>
 
                                 <div>
@@ -194,32 +284,27 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                         <i class="fas fa-clock text-purple-600"></i>
                                         เวลาเริ่มต้น (24 ชั่วโมง)
                                     </label>
-                                    <div class="relative">
-                                        <input type="text" id="timeDisplay" readonly
-                                               value="<?= htmlspecialchars($posted_start_time) ?>"
-                                               onclick="toggleTimePicker()"
-                                               class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none cursor-pointer text-lg font-bold text-center"
-                                               placeholder="เลือกเวลา">
-                                        <input type="hidden" name="start_time" id="timeInput" value="<?= htmlspecialchars($posted_start_time) ?>">
-                                        
-                                        <!-- Time Picker Dropdown -->
-                                        <div id="timePicker" class="hidden absolute z-50 mt-2 w-full bg-white rounded-xl shadow-2xl border-2 border-purple-300 max-h-64 overflow-y-auto">
-                                            <div class="p-2 bg-purple-600 text-white font-bold text-center rounded-t-xl">
-                                                เลือกเวลา (06:00 - 23:00)
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-1 p-2">
-                                                <?php
-                                                for ($h = 6; $h <= 23; $h++) {
-                                                    foreach (['00', '30'] as $m) {
-                                                        $timeValue = sprintf('%02d:%s', $h, $m);
-                                                        echo '<button type="button" onclick="selectTime(\''.$timeValue.'\')" class="time-option px-4 py-2 text-center rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-colors font-semibold">'.$timeValue.'</button>';
-                                                    }
-                                                }
-                                                ?>
-                                            </div>
+                                    <div class="flex gap-2">
+                                        <div class="flex-1">
+                                            <label class="text-xs text-gray-600 mb-1 block">ชั่วโมง</label>
+                                            <input type="number" id="hourInput" min="6" max="23" value="<?= date('H', strtotime($posted_start_time)) ?>"
+                                                   class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none text-center text-lg font-bold"
+                                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2); updateTimeDisplay();"
+                                                   onchange="updateTimeDisplay()">
+                                        </div>
+                                        <div class="flex items-end">
+                                            <span class="text-2xl font-bold text-gray-500 px-2 pb-3">:</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <label class="text-xs text-gray-600 mb-1 block">นาที</label>
+                                            <input type="number" id="minuteInput" min="0" max="59" value="<?= date('i', strtotime($posted_start_time)) ?>"
+                                                   class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none text-center text-lg font-bold"
+                                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2); updateTimeDisplay();"
+                                                   onchange="updateTimeDisplay()">
                                         </div>
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-1">⏰ คลิกเพื่อเลือกเวลา (ตัวอย่าง: 16:00, 17:30)</p>
+                                    <input type="hidden" name="start_time" id="timeInput" value="<?= htmlspecialchars($posted_start_time) ?>">
+                                    <p class="text-xs text-gray-500 mt-2">⏰ เลือกเวลาระหว่าง 06:00 - 23:00 (ตัวเลขเท่านั้น)</p>
                                 </div>
 
                                 <div>
@@ -229,6 +314,7 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                     </label>
                                     <input type="number" name="hours" id="hoursInput" required
                                            min="1" max="6" value="<?= $posted_hours ?>"
+                                           oninput="updatePriceDisplay()"
                                            onchange="updatePriceDisplay()"
                                            class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
                                 </div>
@@ -240,6 +326,7 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                     </label>
                                     <input type="number" step="1" name="discount" id="discountInput"
                                            value="<?= $posted_discount ?>"
+                                           oninput="updatePriceDisplay()"
                                            onchange="updatePriceDisplay()"
                                            class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
                                 </div>
@@ -250,7 +337,7 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                         <i class="fas fa-check-circle text-xl"></i>
                                         บันทึกการจอง
                                     </button>
-                                    <a href="/BARGAIN SPORT/timetable.php"
+                                    <a href="/timetable.php"
                                        class="flex-1 md:flex-initial border-2 border-gray-400 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 hover:border-gray-600 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2">
                                         <i class="fas fa-table text-xl"></i>
                                         ดูตารางเวลา
@@ -273,6 +360,19 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                         </div>
 
                         <div class="space-y-4">
+                            <!-- Selected Court Display -->
+                            <div id="selectedCourtBox" class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl p-4 <?= $isVipSelected ? '' : 'hidden' ?>">
+                                <div class="text-center">
+                                    <div class="text-white/90 text-xs mb-1 flex items-center justify-center gap-1">
+                                        <i class="fas fa-crown"></i>
+                                        <span>คุณเลือก</span>
+                                    </div>
+                                    <div class="text-white text-lg font-bold" id="selectedCourtName">
+                                        <?= htmlspecialchars($selectedCourtName) ?>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="bg-slate-700/50 rounded-xl p-4 flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <div class="bg-purple-600/50 p-2.5 rounded-lg">
@@ -348,7 +448,10 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
                                     <i class="fas fa-info-circle text-blue-400 text-lg mt-0.5"></i>
                                     <div class="text-sm text-blue-200" id="priceInfoBox">
                                         <p class="font-semibold mb-1">ราคาคำนวณจาก:</p>
-                                        <?php if ($matchedRuleDisplay): ?>
+                                        <?php if ($isVipSelected): ?>
+                                            <p>• ห้อง VIP: <?= htmlspecialchars($selectedCourtName) ?></p>
+                                            <p>• ราคาพิเศษ ฿<?= number_format($currentPricePerHour, 0) ?>/ชม.</p>
+                                        <?php elseif ($matchedRuleDisplay): ?>
                                             <p>• วัน: <?= htmlspecialchars($matchedRuleDisplay['day_text']) ?></p>
                                             <p>• ช่วงเวลา: <?= htmlspecialchars($matchedRuleDisplay['start_time']) ?> - <?= htmlspecialchars($matchedRuleDisplay['end_time']) ?> น.</p>
                                             <p>• ฿<?= number_format($matchedRuleDisplay['price_per_hour'], 0) ?>/ชม.</p>
@@ -393,41 +496,134 @@ $dayType = ($dayOfWeek === 0 || $dayOfWeek === 6) ? 'เสาร์-อาท�
         }
     });
 
+    function updatePriceOnCourtChange() {
+        const courtSelect = document.getElementById('courtSelect');
+        const selectedOption = courtSelect.options[courtSelect.selectedIndex];
+        const isVip = selectedOption.getAttribute('data-is-vip') === '1';
+        const vipPrice = parseFloat(selectedOption.getAttribute('data-vip-price')) || 0;
+        const normalPrice = parseFloat(selectedOption.getAttribute('data-normal-price')) || 0;
+        const courtName = selectedOption.getAttribute('data-court-name') || selectedOption.text;
+        
+        const selectedCourtBox = document.getElementById('selectedCourtBox');
+        const selectedCourtName = document.getElementById('selectedCourtName');
+        
+        if (isVip) {
+            selectedCourtBox.classList.remove('hidden');
+            selectedCourtName.textContent = courtName;
+        } else {
+            selectedCourtBox.classList.add('hidden');
+        }
+        
+        updatePriceDisplay();
+    }
+
     function updatePriceDisplay() {
+        const courtSelect = document.getElementById('courtSelect');
+        const selectedOption = courtSelect.options[courtSelect.selectedIndex];
+        const isVip = selectedOption.getAttribute('data-is-vip') === '1';
+        const vipPrice = parseFloat(selectedOption.getAttribute('data-vip-price')) || 0;
+        const normalPrice = parseFloat(selectedOption.getAttribute('data-normal-price')) || 0;
+        const courtName = selectedOption.getAttribute('data-court-name') || selectedOption.text;
+        
         const date = document.getElementById('dateInput').value;
         const time = document.getElementById('timeInput').value;
         const hours = parseInt(document.getElementById('hoursInput').value) || 0;
         const discount = parseInt(document.getElementById('discountInput').value) || 0;
 
-        if (!date || !time) return;
+        if (!date || !time || hours < 1) return;
 
-        fetch(`get_price_ajax.php?date=${date}&time=${time}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const price = parseFloat(data.price) || 0;
-                    const subtotal = price * hours;
-                    const total = Math.max(0, subtotal - discount);
-
-                    document.getElementById('priceDisplay').textContent = price.toLocaleString('th-TH');
-                    document.getElementById('hoursDisplay').textContent = hours;
-                    document.getElementById('subtotalDisplay').textContent = subtotal.toLocaleString('th-TH');
-                    document.getElementById('discountDisplay').textContent = '-' + discount.toLocaleString('th-TH');
-                    document.getElementById('totalDisplay').textContent = '฿' + total.toLocaleString('th-TH');
-
-                    if (data.rule) {
-                        const dayText = data.rule.day_type === 'weekday' ? 'จันทร์-ศุกร์' : 'เสาร์-อาทิตย์';
-                        document.getElementById('priceInfoBox').innerHTML = `
-                            <p class="font-semibold mb-1">ราคาคำนวณจาก:</p>
-                            <p>• วัน: ${dayText}</p>
-                            <p>• ช่วงเวลา: ${data.rule.start_time} - ${data.rule.end_time} น.</p>
-                            <p>• ฿${price.toLocaleString('th-TH')}/ชม.</p>
-                        `;
+        // ถ้าเป็น VIP ใช้ราคา VIP ตรงๆ
+        if (isVip && vipPrice > 0) {
+            updateDisplayWithPrice(vipPrice, hours, discount, courtName, null, isVip);
+        } else if (!isVip && normalPrice > 0) {
+            // ถ้าคอร์ตปกติมีราคาคงที่
+            updateDisplayWithPrice(normalPrice, hours, discount, courtName, null, false);
+        } else {
+            // ถ้าไม่ใช่ VIP และไม่มีราคาคงที่ ใช้ราคาตามเวลา
+            const urlParams = new URLSearchParams({
+                date: date,
+                time: time,
+                court_id: courtSelect.value
+            });
+            
+            fetch(`get_price_ajax.php?${urlParams}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const price = parseFloat(data.price) || 0;
+                        updateDisplayWithPrice(price, hours, discount, courtName, data.rule, isVip);
                     }
-                }
-            })
-            .catch(error => console.error('Error:', error));
+                })
+                .catch(error => {
+                    console.error('Error fetching price:', error);
+                    const defaultPrice = 100;
+                    updateDisplayWithPrice(defaultPrice, hours, discount, courtName, null, isVip);
+                });
+        }
     }
+
+    function updateDisplayWithPrice(price, hours, discount, courtName, rule, isVip) {
+        const subtotal = price * hours;
+        const total = Math.max(0, subtotal - discount);
+
+        document.getElementById('priceDisplay').textContent = price.toLocaleString('th-TH');
+        document.getElementById('hoursDisplay').textContent = hours;
+        document.getElementById('subtotalDisplay').textContent = subtotal.toLocaleString('th-TH');
+        document.getElementById('discountDisplay').textContent = '-' + discount.toLocaleString('th-TH');
+        document.getElementById('totalDisplay').textContent = '฿' + total.toLocaleString('th-TH');
+
+        if (isVip) {
+            document.getElementById('priceInfoBox').innerHTML = `
+                <p class="font-semibold mb-1">ราคาคำนวณจาก:</p>
+                <p>• ห้อง VIP: ${courtName}</p>
+                <p>• ราคาพิเศษ ฿${price.toLocaleString('th-TH')}/ชม.</p>
+            `;
+        } else if (rule) {
+            const dayText = rule.day_type === 'weekday' ? 'จันทร์-ศุกร์' : 'เสาร์-อาทิตย์';
+            document.getElementById('priceInfoBox').innerHTML = `
+                <p class="font-semibold mb-1">ราคาคำนวณจาก:</p>
+                <p>• วัน: ${dayText}</p>
+                <p>• ช่วงเวลา: ${rule.start_time} - ${rule.end_time} น.</p>
+                <p>• ฿${price.toLocaleString('th-TH')}/ชม.</p>
+            `;
+        } else {
+            const date = document.getElementById('dateInput').value;
+            const time = document.getElementById('timeInput').value;
+            const dateObj = new Date(date);
+            const dayOfWeek = dateObj.getDay();
+            const dayType = (dayOfWeek === 0 || dayOfWeek === 6) ? 'เสาร์-อาทิตย์' : 'จันทร์-ศุกร์';
+            
+            document.getElementById('priceInfoBox').innerHTML = `
+                <p class="font-semibold mb-1">ราคาคำนวณจาก:</p>
+                <p>• คอร์ตปกติ: ${courtName}</p>
+                <p>• ราคาคงที่ ฿${price.toLocaleString('th-TH')}/ชม.</p>
+            `;
+        }
+    }
+
+    function updateTimeDisplay() {
+        let hour = document.getElementById('hourInput').value;
+        let minute = document.getElementById('minuteInput').value;
+        
+        // ตรวจสอบและแก้ไขค่า
+        hour = Math.max(6, Math.min(23, parseInt(hour) || 6));
+        minute = Math.max(0, Math.min(59, parseInt(minute) || 0));
+        
+        document.getElementById('hourInput').value = hour;
+        document.getElementById('minuteInput').value = minute;
+        
+        const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        document.getElementById('timeInput').value = time;
+        updatePriceDisplay();
+    }
+
+    // เรียกครั้งแรกเมื่อโหลดหน้า
+    document.addEventListener('DOMContentLoaded', function() {
+        updatePriceOnCourtChange();
+    });
     </script>
 </body>
 </html>

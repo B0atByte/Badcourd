@@ -1,8 +1,8 @@
 <?php
-$host = '127.0.0.1';
+$host = 'mysql'; // <-- ชื่อ service ของ MySQL ใน docker-compose.yml
 $db   = 'badcourt';
 $user = 'root';
-$pass = '';
+$pass = 'rootpassword'; // <-- ให้ตรงกับ MYSQL_ROOT_PASSWORD ใน docker-compose.yml
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
