@@ -6,9 +6,11 @@
 
 - **จองคอร์ต** — จองคอร์ตแบดมินตันพร้อมระบุชื่อลูกค้า เบอร์โทร ช่วงเวลา และจำนวนชั่วโมง
 - **ตารางคอร์ต 24 ชม.** — แสดงตารางการใช้งานคอร์ตทั้งหมดแบบ real-time
+- **ระบบสมาชิกและประวัติ** — ระบบจัดการข้อมูลสมาชิกและประวัติการเข้าใช้งาน
 - **ระบบราคาอัตโนมัติ** — คำนวณราคาตามช่วงเวลา (วันธรรมดา/วันหยุด) และประเภทคอร์ต (ปกติ/VIP)
 - **จัดการคอร์ต** — เพิ่ม แก้ไข ลบคอร์ต รองรับทั้งคอร์ตปกติและห้อง VIP
-- **ระบบสมาชิก** — แยกสิทธิ์ Admin / User
+- **สถิติและรายงาน** — แสดงภาพรวมสถิติการใช้งาน และส่งออกรายงาน Excel
+- **ระบบสมาชิก** — แยกสิทธิ์ Admin / User และระบบสมัครสมาชิก
 - **ออกรายงาน Excel** — ดาวน์โหลดรายงานการจองในรูปแบบ Excel
 - **ยกเลิกการจอง** — ยกเลิกและแก้ไขรายการจองได้
 
@@ -18,7 +20,7 @@
 |-------|-----------|
 | Backend | PHP 8.2 |
 | Database | MySQL 8.0 |
-| Frontend | TailwindCSS (CDN), Font Awesome |
+| Frontend | TailwindCSS (CDN), Font Awesome, Flowbite |
 | Excel Export | PhpSpreadsheet |
 | Containerization | Docker, Docker Compose |
 
@@ -27,6 +29,7 @@
 ```
 ├── admin/              # หน้าจัดการสำหรับ Admin
 │   ├── courts.php      #   จัดการคอร์ต
+│   ├── members.php     #   จัดการสมาชิก
 │   ├── pricing.php     #   ตั้งค่าราคา
 │   └── users.php       #   จัดการผู้ใช้
 ├── auth/               # ระบบ Authentication
@@ -46,12 +49,17 @@
 │   ├── header.php
 │   ├── footer.php
 │   └── helpers.php
+├── members/            # ระบบสมาชิก
+│   ├── index.php       #   หน้าโปรไฟล์สมาชิก
+│   └── register.php    #   สมัครสมาชิก
 ├── reports/            # รายงาน
 │   └── export_excel.php
 ├── SQL/                # ไฟล์ฐานข้อมูล
-│   └── badcourt.sql
+│   ├── badcourt.sql
+│   └── members_system.sql
 ├── index.php           # หน้าหลัก
 ├── timetable.php       # ตารางคอร์ต 24 ชม.
+├── timetable_detail.php # รายละเอียดตารางคอร์ตเพิ่มเติม
 ├── Dockerfile
 ├── docker-compose.yml
 └── composer.json
@@ -78,7 +86,7 @@
 
 3. **Import ฐานข้อมูล**
    - เปิด phpMyAdmin ที่ `http://localhost:8081`
-   - Import ไฟล์ `SQL/badcourt.sql` เข้า database `badcourt`
+   - Import ไฟล์ในโฟลเดอร์ `SQL/` เข้า database `badcourt`
 
 4. **เข้าใช้งาน**
    - Web App: `http://localhost:8085`
@@ -96,6 +104,7 @@
 | Table | Description |
 |-------|-------------|
 | `users` | ข้อมูลผู้ใช้งานและสิทธิ์ |
+| `members` | ข้อมูลสมาชิก |
 | `courts` | ข้อมูลคอร์ต (ปกติ / VIP) |
 | `bookings` | รายการจองคอร์ต |
 | `booking_logs` | ประวัติการดำเนินการ |

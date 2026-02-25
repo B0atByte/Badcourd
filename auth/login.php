@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         * { font-family: 'Prompt', sans-serif; }
     </style>
 </head>
-<body style="background:#EDEDCE;" class="min-h-screen flex items-center justify-center p-4">
+<body style="background:#FAFAFA;" class="min-h-screen flex items-center justify-center p-4">
 
     <div class="w-full max-w-sm">
 
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="text-center mb-8">
             <img src="/logo/BPL.png" alt="BPL Logo"
                  class="w-16 h-16 object-contain mx-auto mb-4 rounded-xl shadow">
-            <h1 style="color:#0C2C55;" class="text-2xl font-bold">BARGAIN SPORT</h1>
+            <h1 style="color:#005691;" class="text-2xl font-bold">BARGAIN SPORT</h1>
             <p class="text-gray-500 text-sm mt-1">ระบบจองคอร์ตแบดมินตัน</p>
         </div>
 
@@ -60,18 +60,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อผู้ใช้</label>
                     <input type="text" name="username" required placeholder="กรอกชื่อผู้ใช้"
-                           style="--tw-ring-color:#629FAD;"
-                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none transition-all text-sm">
+                           style="--tw-ring-color:#005691;"
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none transition-all text-sm">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
                     <input type="password" name="password" required placeholder="กรอกรหัสผ่าน"
-                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none transition-all text-sm">
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none transition-all text-sm">
                 </div>
 
                 <button type="submit"
-                        style="background:#296374;"
+                        style="background:#FF0000;"
                         class="w-full py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm mt-2">
                     เข้าสู่ระบบ
                 </button>

@@ -56,13 +56,13 @@ $court = $courtStmt->fetch();
     <script src="https://cdn.tailwindcss.com"></script>
     <title>เลื่อนการจอง - BARGAIN SPORT</title>
 </head>
-<body style="background:#EDEDCE;" class="min-h-screen">
+<body style="background:#FAFAFA;" class="min-h-screen">
     <?php include __DIR__.'/../includes/header.php'; ?>
 
     <div class="max-w-3xl mx-auto px-4 py-8">
 
         <div class="mb-6">
-            <h1 style="color:#0C2C55;" class="text-2xl font-bold">เลื่อนการจอง</h1>
+            <h1 style="color:#005691;" class="text-2xl font-bold">เลื่อนการจอง</h1>
             <p class="text-gray-500 text-sm mt-0.5">แก้ไขวันที่และเวลาการจอง</p>
         </div>
 
@@ -80,7 +80,7 @@ $court = $courtStmt->fetch();
 
         <!-- Booking Info -->
         <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
-            <h3 style="color:#0C2C55;" class="font-semibold mb-3 text-sm uppercase tracking-wide">ข้อมูลการจอง #<?= $booking['id'] ?></h3>
+            <h3 style="color:#005691;" class="font-semibold mb-3 text-sm uppercase tracking-wide">ข้อมูลการจอง #<?= $booking['id'] ?></h3>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div>
                     <span class="text-gray-500">คอร์ต</span>
@@ -105,7 +105,7 @@ $court = $courtStmt->fetch();
 
             <!-- Form -->
             <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 style="color:#0C2C55;" class="font-semibold mb-4 text-sm">เลื่อนวันและเวลา</h3>
+                <h3 style="color:#005691;" class="font-semibold mb-4 text-sm">เลื่อนวันและเวลา</h3>
 
                 <form method="post">
                     <div class="space-y-4">
@@ -113,7 +113,7 @@ $court = $courtStmt->fetch();
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">วันที่ใหม่</label>
                             <input type="date" name="date" required
                                    value="<?= htmlspecialchars($currentDate) ?>"
-                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
                         </div>
 
                         <div>
@@ -121,7 +121,7 @@ $court = $courtStmt->fetch();
                             <input type="time" name="start_time" required
                                    value="<?= htmlspecialchars($currentTime) ?>"
                                    min="06:00" max="23:00"
-                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
                             <p class="text-xs text-gray-400 mt-1">06:00 - 23:00 น.</p>
                         </div>
 
@@ -129,18 +129,18 @@ $court = $courtStmt->fetch();
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">จำนวนชั่วโมง</label>
                             <input type="number" name="hours" required
                                    min="1" max="6" value="<?= $currentHours ?>"
-                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
                         </div>
 
                         <div class="flex gap-3 pt-2">
                             <button type="submit"
-                                    style="background:#296374;"
+                                    style="background:#004A7C;"
                                     class="flex-1 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                                 บันทึก
                             </button>
                             <a href="index.php"
-                               style="color:#296374; border-color:#629FAD;"
-                               class="flex-1 py-2.5 border text-sm font-medium rounded-lg text-center hover:bg-[#EDEDCE] transition-colors">
+                               style="color:#004A7C; border-color:#E8F1F5;"
+                               class="flex-1 py-2.5 border text-sm font-medium rounded-lg text-center hover:bg-[#FAFAFA] transition-colors">
                                 กลับ
                             </a>
                         </div>
@@ -149,7 +149,7 @@ $court = $courtStmt->fetch();
             </div>
 
             <!-- Summary -->
-            <div style="background:#0C2C55;" class="rounded-xl p-6">
+            <div style="background:#005691;" class="rounded-xl p-6">
                 <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wide">สรุปยอดปัจจุบัน</h3>
 
                 <div class="space-y-3 mb-5">
@@ -167,11 +167,11 @@ $court = $courtStmt->fetch();
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-blue-200">ส่วนลด</span>
-                        <span style="color:#629FAD;">-฿<?= number_format($currentDiscount, 0) ?></span>
+                        <span style="color:#E8F1F5;">-฿<?= number_format($currentDiscount, 0) ?></span>
                     </div>
                 </div>
 
-                <div style="background:#296374;" class="rounded-lg p-4 text-center">
+                <div style="background:#004A7C;" class="rounded-lg p-4 text-center">
                     <p class="text-blue-100 text-xs mb-1">ยอดชำระ</p>
                     <p class="text-white text-3xl font-bold">฿<?= number_format($currentTotal, 0) ?></p>
                 </div>

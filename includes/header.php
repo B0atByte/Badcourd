@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
   * { font-family: 'Prompt', sans-serif !important; }
 </style>
 
-<nav style="background:#0C2C55;" class="sticky top-0 z-50 shadow-md">
+<nav style="background:#005691;" class="sticky top-0 z-50 shadow-md">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-14">
 
@@ -21,12 +21,15 @@ if (session_status() === PHP_SESSION_NONE) {
 
       <!-- Desktop Menu -->
       <div class="hidden md:flex items-center gap-1">
-        <a href="/timetable.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">ตารางคอร์ต</a>
+        <a href="/timetable_detail.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">ตารางคอร์ต</a>
         <a href="/bookings/" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">การจอง</a>
         <a href="/admin/courts.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">คอร์ต</a>
+        <a href="/members/search.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">สมาชิก</a>
 
         <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
+        <a href="/admin/members.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">จัดการสมาชิก</a>
         <a href="/admin/users.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">ผู้ใช้งาน</a>
+        <a href="/reports/export_excel.php" class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded transition-colors">รายงาน</a>
         <?php endif; ?>
 
         <div class="w-px h-5 bg-white/20 mx-2"></div>
@@ -38,7 +41,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <?php endif; ?>
 
         <a href="/auth/logout.php"
-           style="background:#296374;"
+           style="background:#FF0000;"
            class="px-3 py-1.5 text-sm text-white rounded hover:opacity-90 transition-opacity">
           ออกจากระบบ
         </a>
@@ -65,11 +68,14 @@ if (session_status() === PHP_SESSION_NONE) {
         <span class="text-xs ml-1">(<?= $_SESSION['user']['role'] === 'admin' ? 'Admin' : 'User' ?>)</span>
       </div>
       <?php endif; ?>
-      <a href="/timetable.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">ตารางคอร์ต</a>
+      <a href="/timetable_detail.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">ตารางคอร์ต</a>
       <a href="/bookings/" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">การจอง</a>
       <a href="/admin/courts.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">คอร์ต</a>
+      <a href="/members/search.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">สมาชิก</a>
       <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
+      <a href="/admin/members.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">จัดการสมาชิก</a>
       <a href="/admin/users.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">ผู้ใช้งาน</a>
+      <a href="/reports/export_excel.php" class="block px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded">รายงาน</a>
       <?php endif; ?>
       <a href="/auth/logout.php" class="block px-3 py-2 text-sm text-white bg-white/10 rounded mt-2">ออกจากระบบ</a>
     </div>

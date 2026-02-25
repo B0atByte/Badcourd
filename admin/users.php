@@ -42,14 +42,14 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
   <script src="https://cdn.tailwindcss.com"></script>
   <title>จัดการผู้ใช้งาน - BARGAIN SPORT</title>
 </head>
-<body style="background:#EDEDCE;" class="min-h-screen">
+<body style="background:#FAFAFA;" class="min-h-screen">
 <?php include __DIR__.'/../includes/header.php'; ?>
 
 <div class="max-w-5xl mx-auto px-4 py-8">
 
   <!-- Header -->
   <div class="mb-6">
-    <h1 style="color:#0C2C55;" class="text-2xl font-bold">จัดการผู้ใช้งาน</h1>
+    <h1 style="color:#005691;" class="text-2xl font-bold">จัดการผู้ใช้งาน</h1>
     <p class="text-gray-500 text-sm mt-0.5">Admin Panel · จัดการบัญชีผู้ใช้ทั้งหมด</p>
   </div>
 
@@ -57,11 +57,11 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-400 text-xs mb-1">ผู้ใช้ทั้งหมด</p>
-      <p style="color:#0C2C55;" class="text-2xl font-bold"><?= $totalUsers ?></p>
+      <p style="color:#005691;" class="text-2xl font-bold"><?= $totalUsers ?></p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-400 text-xs mb-1">ใช้งานอยู่</p>
-      <p style="color:#296374;" class="text-2xl font-bold"><?= $activeUsers ?></p>
+      <p style="color:#004A7C;" class="text-2xl font-bold"><?= $activeUsers ?></p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-400 text-xs mb-1">ปิดใช้งาน</p>
@@ -69,35 +69,35 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-400 text-xs mb-1">ผู้ดูแลระบบ</p>
-      <p style="color:#629FAD;" class="text-2xl font-bold"><?= $adminCount ?></p>
+      <p style="color:#E8F1F5;" class="text-2xl font-bold"><?= $adminCount ?></p>
     </div>
   </div>
 
   <!-- Add User Form -->
   <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
-    <h2 style="color:#0C2C55;" class="font-semibold mb-4 text-sm uppercase tracking-wide">เพิ่มผู้ใช้งานใหม่</h2>
+    <h2 style="color:#005691;" class="font-semibold mb-4 text-sm uppercase tracking-wide">เพิ่มผู้ใช้งานใหม่</h2>
     <form method="post" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">ชื่อผู้ใช้</label>
         <input type="text" name="username" placeholder="Username" required
-               class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+               class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">รหัสผ่าน</label>
         <input type="password" name="password" placeholder="Password" required
-               class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+               class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">สิทธิ์</label>
         <select name="role" required
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
           <option value="user">ผู้ใช้งาน</option>
           <option value="admin">ผู้ดูแลระบบ</option>
         </select>
       </div>
       <div class="flex items-end">
         <button type="submit" name="add_user"
-                style="background:#296374;"
+                style="background:#004A7C;"
                 class="w-full px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
           + เพิ่มผู้ใช้
         </button>
@@ -107,7 +107,7 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
 
   <!-- Users List -->
   <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <div style="background:#0C2C55;" class="px-5 py-3">
+    <div style="background:#005691;" class="px-5 py-3">
       <h2 class="text-white font-medium text-sm">รายชื่อผู้ใช้งานทั้งหมด</h2>
     </div>
 
@@ -124,7 +124,7 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
             <p class="text-gray-400 text-xs">ID: <?= $u['id'] ?></p>
           </div>
           <div class="flex gap-1">
-            <span class="text-xs px-2 py-1 rounded-full <?= $u['role']==='admin' ? 'bg-[#EDEDCE] text-[#296374]' : 'bg-gray-100 text-gray-500' ?>">
+            <span class="text-xs px-2 py-1 rounded-full <?= $u['role']==='admin' ? 'bg-[#FAFAFA] text-[#004A7C]' : 'bg-gray-100 text-gray-500' ?>">
               <?= $roleText ?>
             </span>
             <span class="text-xs px-2 py-1 rounded-full <?= $u['active'] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500' ?>">
@@ -135,8 +135,8 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
         <p class="text-gray-400 text-xs mb-3">สร้างเมื่อ: <?= date('d/m/Y H:i', strtotime($u['created_at'])) ?></p>
         <div class="flex gap-2">
           <a href="?toggle=<?= $u['id'] ?>"
-             style="border-color:#629FAD; color:#296374;"
-             class="flex-1 py-1.5 border text-xs rounded text-center hover:bg-[#EDEDCE] transition-colors">
+             style="border-color:#E8F1F5; color:#004A7C;"
+             class="flex-1 py-1.5 border text-xs rounded text-center hover:bg-[#FAFAFA] transition-colors">
             <?= $u['active'] ? 'ปิดใช้งาน' : 'เปิดใช้งาน' ?>
           </a>
           <a href="?delete=<?= $u['id'] ?>"
@@ -171,14 +171,14 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
             <td class="px-5 py-3 text-gray-400"><?= $u['id'] ?></td>
             <td class="px-5 py-3">
               <div class="flex items-center gap-2">
-                <div style="background:#0C2C55;" class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                <div style="background:#005691;" class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium">
                   <?= strtoupper(substr($u['username'], 0, 1)) ?>
                 </div>
                 <span class="font-medium text-gray-800"><?= htmlspecialchars($u['username']) ?></span>
               </div>
             </td>
             <td class="px-5 py-3 text-center">
-              <span class="text-xs px-2.5 py-1 rounded-full <?= $u['role']==='admin' ? 'bg-[#EDEDCE] text-[#296374] font-medium' : 'bg-gray-100 text-gray-500' ?>">
+              <span class="text-xs px-2.5 py-1 rounded-full <?= $u['role']==='admin' ? 'bg-[#FAFAFA] text-[#004A7C] font-medium' : 'bg-gray-100 text-gray-500' ?>">
                 <?= $roleText ?>
               </span>
             </td>
@@ -193,8 +193,8 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
             <td class="px-5 py-3">
               <div class="flex gap-1.5 justify-center">
                 <a href="?toggle=<?= $u['id'] ?>"
-                   style="border-color:#629FAD; color:#296374;"
-                   class="px-3 py-1.5 border text-xs rounded hover:bg-[#EDEDCE] transition-colors">
+                   style="border-color:#E8F1F5; color:#004A7C;"
+                   class="px-3 py-1.5 border text-xs rounded hover:bg-[#FAFAFA] transition-colors">
                   <?= $u['active'] ? 'ปิด' : 'เปิด' ?>
                 </a>
                 <a href="?delete=<?= $u['id'] ?>"
@@ -217,7 +217,7 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
 
   <!-- Security note -->
   <div class="mt-5 bg-white rounded-xl border border-gray-200 p-5">
-    <h3 style="color:#0C2C55;" class="font-medium mb-2 text-sm">ข้อควรระวังด้านความปลอดภัย</h3>
+    <h3 style="color:#005691;" class="font-medium mb-2 text-sm">ข้อควรระวังด้านความปลอดภัย</h3>
     <ul class="text-gray-500 text-xs space-y-1">
       <li>· ใช้รหัสผ่านที่แข็งแรงสำหรับบัญชีผู้ดูแลระบบ</li>
       <li>· ตรวจสอบสิทธิ์การเข้าถึงของผู้ใช้เป็นประจำ</li>

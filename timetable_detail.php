@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/auth/guard.php';
 require_once __DIR__ . '/config/db.php';
 
 $date = $_GET['date'] ?? date('Y-m-d');
@@ -36,7 +37,7 @@ foreach ($bookings as $b) {
     for ($i = 0; $i < $totalSlots; $i++) {
         $slot = $startSlot + $i;
         if ($slot >= 0 && $slot < 48) {
-            $grid[$b['court_id']][$slot] = 'จองแล้ว';
+            $grid[$b['court_id']][$slot] = $b['customer_name'];
             $gridDetails[$b['court_id']][$slot] = $b;
         }
     }
@@ -59,10 +60,8 @@ function getCourtDisplayName($court) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-  <title>ตารางคอร์ต - <?= htmlspecialchars($date) ?> - BARGAIN SPORT</title>
+  <title>ตารางคอร์ต - <?= htmlspecialchars($date) ?></title>
   <style>
-    * { font-family: 'Prompt', sans-serif !important; }
     .booking-item {
       border-radius: 8px;
       padding: 8px 12px;
@@ -71,11 +70,13 @@ function getCourtDisplayName($court) {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: pointer;
       transition: opacity 0.15s;
     }
+    .booking-item:hover { opacity: 0.85; }
     .booking-booked { background: #004A7C; color: white; }
     .booking-vip { background: #005691; color: white; }
-    .booking-empty { background: #E8F1F5; color: #666; cursor: default; }
+    .booking-empty { background: #E8F1F5; color: white; cursor: default; }
     .court-card {
       background: white;
       border-radius: 12px;
@@ -100,23 +101,7 @@ function getCourtDisplayName($court) {
   </style>
 </head>
 <body style="background:#FAFAFA;" class="min-h-screen">
-
-<!-- Simple Header -->
-<nav style="background:#005691;" class="sticky top-0 z-50 shadow-md">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-14">
-      <a href="/" class="flex items-center gap-2">
-        <img src="/logo/BPL.png" alt="BPL" class="w-8 h-8 object-contain rounded">
-        <span class="text-white font-semibold text-base">BARGAIN SPORT</span>
-      </a>
-      <a href="/auth/login.php"
-         style="background:#FF0000;"
-         class="px-4 py-1.5 text-sm text-white rounded hover:opacity-90 transition-opacity">
-        เข้าสู่ระบบ
-      </a>
-    </div>
-  </div>
-</nav>
+<?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="max-w-6xl mx-auto px-4 py-8">
 
@@ -130,12 +115,17 @@ function getCourtDisplayName($court) {
 
       <form method="get" class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
         <input type="date" name="date" value="<?= htmlspecialchars($date) ?>"
-               class="px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
+               class="px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
         <button type="submit"
                 style="background:#004A7C;"
                 class="px-5 py-2 text-white text-sm rounded-lg hover:opacity-90 transition-opacity">
           แสดงตาราง
         </button>
+        <a href="/bookings/create.php"
+           style="background:#005691;"
+           class="px-5 py-2 text-white text-sm rounded-lg hover:opacity-90 transition-opacity text-center">
+          + จองใหม่
+        </a>
       </form>
     </div>
   </div>
@@ -153,9 +143,6 @@ function getCourtDisplayName($court) {
     <div class="flex items-center gap-2 text-sm">
       <div class="w-4 h-4 rounded" style="background:#005691;"></div>
       <span class="text-gray-600">จองแล้ว (VIP)</span>
-    </div>
-    <div class="flex-1 text-right">
-      <span class="text-xs text-gray-400">เข้าสู่ระบบเพื่อดูรายละเอียดเพิ่มเติม</span>
     </div>
   </div>
 
@@ -185,9 +172,10 @@ function getCourtDisplayName($court) {
               $startDate = new DateTime($details['start_datetime']);
               $endDate = new DateTime('@' . ($startDate->getTimestamp() + ($details['duration_hours'] * 3600)));
           ?>
-            <div class="booking-item booking-vip">
+            <div class="booking-item booking-vip"
+                 onclick="showModal(<?= htmlspecialchars(json_encode($details)) ?>, '<?= $startDate->format('H:i') ?>', '<?= htmlspecialchars($displayName) ?>', true)">
               <div>
-                <div class="font-medium">จองแล้ว</div>
+                <div class="font-medium"><?= htmlspecialchars($name) ?></div>
                 <div class="text-xs opacity-80 mt-0.5"><?= $startDate->format('H:i') ?> - <?= $endDate->format('H:i') ?></div>
               </div>
             </div>
@@ -228,9 +216,10 @@ function getCourtDisplayName($court) {
               $startDate = new DateTime($details['start_datetime']);
               $endDate = new DateTime('@' . ($startDate->getTimestamp() + ($details['duration_hours'] * 3600)));
           ?>
-            <div class="booking-item booking-booked">
+            <div class="booking-item booking-booked"
+                 onclick="showModal(<?= htmlspecialchars(json_encode($details)) ?>, '<?= $startDate->format('H:i') ?>', '<?= htmlspecialchars($displayName) ?>', false)">
               <div>
-                <div class="font-medium">จองแล้ว</div>
+                <div class="font-medium"><?= htmlspecialchars($name) ?></div>
                 <div class="text-xs opacity-80 mt-0.5"><?= $startDate->format('H:i') ?> - <?= $endDate->format('H:i') ?></div>
               </div>
             </div>
@@ -280,22 +269,101 @@ function getCourtDisplayName($court) {
     </div>
   </div>
 
-  <!-- Login CTA -->
-  <div class="mt-6 bg-white rounded-xl border border-gray-200 p-6 text-center">
-    <h3 style="color:#005691;" class="text-lg font-semibold mb-2">ต้องการดูรายละเอียดเพิ่มเติมหรือจองคอร์ต?</h3>
-    <p class="text-gray-500 text-sm mb-4">เข้าสู่ระบบเพื่อดูชื่อผู้จอง เบอร์โทร และจัดการการจอง</p>
-    <a href="/auth/login.php"
-       style="background:#FF0000;"
-       class="inline-block px-6 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-      เข้าสู่ระบบ
-    </a>
-  </div>
-
 </div>
 
-<footer style="background:#005691;" class="mt-12 py-4 text-center text-sm text-blue-200">
-  © <?= date('Y') ?> Boat Patthanapong &nbsp;|&nbsp; BARGAIN SPORT System
-</footer>
+<!-- Modal -->
+<div id="bookingModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+    <div class="flex justify-between items-center mb-5">
+      <h2 style="color:#005691;" class="text-lg font-bold">รายละเอียดการจอง</h2>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+    </div>
 
+    <div class="space-y-3 text-sm">
+      <div class="grid grid-cols-2 gap-3 bg-gray-50 rounded-lg p-4">
+        <div>
+          <p class="text-gray-400 text-xs mb-1">คอร์ต</p>
+          <p class="font-semibold text-gray-800" id="modalCourt">-</p>
+        </div>
+        <div>
+          <p class="text-gray-400 text-xs mb-1">เวลา</p>
+          <p class="font-semibold text-gray-800" id="modalTime">-</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <p class="text-gray-400 text-xs mb-1">ผู้จอง</p>
+          <p class="font-medium text-gray-800" id="modalCustomer">-</p>
+        </div>
+        <div>
+          <p class="text-gray-400 text-xs mb-1">เบอร์โทร</p>
+          <p class="font-medium text-gray-800" id="modalPhone">-</p>
+        </div>
+        <div>
+          <p class="text-gray-400 text-xs mb-1">วันที่</p>
+          <p class="font-medium text-gray-800" id="modalDate">-</p>
+        </div>
+        <div>
+          <p class="text-gray-400 text-xs mb-1">ระยะเวลา</p>
+          <p class="font-medium text-gray-800" id="modalDuration">-</p>
+        </div>
+      </div>
+
+      <div style="background:#FAFAFA;" class="rounded-lg p-4 flex justify-between items-center">
+        <span class="text-gray-600">ยอดเงิน</span>
+        <span style="color:#004A7C;" class="text-xl font-bold" id="modalPrice">-</span>
+      </div>
+    </div>
+
+    <div class="flex gap-2 mt-5">
+      <a href="#" id="modalEditLink"
+         style="background:#004A7C;"
+         class="flex-1 px-4 py-2.5 text-white text-sm rounded-lg text-center hover:opacity-90 transition-opacity">
+        แก้ไข / เลื่อน
+      </a>
+      <button onclick="closeModal()"
+              class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
+        ปิด
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showModal(booking, timeStr, courtName, isVip) {
+  const startDate = new Date(booking.start_datetime);
+  const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const dateStr = `${startDate.getDate()} ${thaiMonths[startDate.getMonth()]} ${startDate.getFullYear() + 543}`;
+  const timeStartStr = startDate.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+  const endDate = new Date(startDate.getTime() + (booking.duration_hours * 3600000));
+  const timeEndStr = endDate.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+
+  document.getElementById('modalCourt').textContent = courtName;
+  document.getElementById('modalTime').textContent = `${timeStartStr} - ${timeEndStr}`;
+  document.getElementById('modalCustomer').textContent = booking.customer_name || '-';
+  document.getElementById('modalPhone').textContent = booking.customer_phone || '-';
+  document.getElementById('modalDate').textContent = dateStr;
+  document.getElementById('modalDuration').textContent = `${booking.duration_hours} ชั่วโมง`;
+  document.getElementById('modalPrice').textContent = `฿${parseFloat(booking.total_amount || 0).toLocaleString()}`;
+  document.getElementById('modalEditLink').href = `/bookings/update.php?id=${booking.id}`;
+
+  document.getElementById('bookingModal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('bookingModal').classList.add('hidden');
+}
+
+document.getElementById('bookingModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>
