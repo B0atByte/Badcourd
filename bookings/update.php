@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $start_time = $_POST['start_time'];
     $hours = (int)$_POST['hours'];
     $start = new DateTime($date . ' ' . $start_time);
-    
+
     if (has_overlap($booking['court_id'], $start, $hours, $id)) {
         $error = 'เวลานี้มีการจองอื่นอยู่แล้ว';
     } else {
@@ -29,8 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare('UPDATE bookings SET start_datetime=?, duration_hours=?, price_per_hour=?, total_amount=?, updated_at=NOW() WHERE id=?');
         $stmt->execute([$start->format('Y-m-d H:i:s'), $hours, $pph, $total, $id]);
         $success = 'อัปเดตการจองสำเร็จ';
-        
-        // Refresh booking data
+
         $bk->execute([$id]);
         $booking = $bk->fetch();
     }
@@ -40,15 +39,11 @@ $startDt = new DateTime($booking['start_datetime']);
 $currentDate = $startDt->format('Y-m-d');
 $currentTime = $startDt->format('H:i');
 $currentHours = $booking['duration_hours'];
-
-// คำนวณราคาปัจจุบัน
-$currentStart = new DateTime($booking['start_datetime']);
 $currentPricePerHour = $booking['price_per_hour'];
 $currentSubtotal = $currentPricePerHour * $currentHours;
 $currentDiscount = $booking['discount_amount'];
 $currentTotal = $booking['total_amount'];
 
-// ดึงข้อมูลคอร์ต
 $courtStmt = $pdo->prepare('SELECT * FROM courts WHERE id=?');
 $courtStmt->execute([$booking['court_id']]);
 $court = $courtStmt->fetch();
@@ -59,240 +54,131 @@ $court = $courtStmt->fetch();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>เลื่อนการจอง - BARGAIN_SPORT</title>
-    <style>
-        body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
-    </style>
+    <title>เลื่อนการจอง - BARGAIN SPORT</title>
 </head>
-<body class="min-h-screen">
+<body style="background:#EDEDCE;" class="min-h-screen">
     <?php include __DIR__.'/../includes/header.php'; ?>
-    
-    <div class="container mx-auto px-4 py-8 max-w-5xl">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 mb-8">
-            
-            <!-- Page Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-6 mb-6 shadow-lg">
-                <h4 class="text-2xl md:text-3xl font-bold flex items-center gap-3 m-0">
-                    <i class="fas fa-edit"></i>
-                    <span>เลื่อนการจอง</span>
-                </h4>
-                <p class="mt-2 text-blue-100">แก้ไขวันที่และเวลาการจอง</p>
-            </div>
 
-            <!-- Success Alert -->
-            <?php if ($success): ?>
-            <div class="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-lg mb-6 shadow-md">
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle text-2xl mr-3"></i>
-                    <span class="font-medium"><?= htmlspecialchars($success) ?></span>
+    <div class="max-w-3xl mx-auto px-4 py-8">
+
+        <div class="mb-6">
+            <h1 style="color:#0C2C55;" class="text-2xl font-bold">เลื่อนการจอง</h1>
+            <p class="text-gray-500 text-sm mt-0.5">แก้ไขวันที่และเวลาการจอง</p>
+        </div>
+
+        <?php if ($success): ?>
+        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
+            <?= htmlspecialchars($success) ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($error): ?>
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
+            <?= htmlspecialchars($error) ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Booking Info -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+            <h3 style="color:#0C2C55;" class="font-semibold mb-3 text-sm uppercase tracking-wide">ข้อมูลการจอง #<?= $booking['id'] ?></h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <div>
+                    <span class="text-gray-500">คอร์ต</span>
+                    <p class="font-medium text-gray-800 mt-0.5">คอร์ต <?= htmlspecialchars($court['court_no']) ?></p>
+                </div>
+                <div>
+                    <span class="text-gray-500">ผู้จอง</span>
+                    <p class="font-medium text-gray-800 mt-0.5"><?= htmlspecialchars($booking['customer_name']) ?></p>
+                </div>
+                <div>
+                    <span class="text-gray-500">เบอร์โทร</span>
+                    <p class="font-medium text-gray-800 mt-0.5"><?= htmlspecialchars($booking['customer_phone']) ?></p>
+                </div>
+                <div>
+                    <span class="text-gray-500">ส่วนลด</span>
+                    <p class="font-medium text-gray-800 mt-0.5">฿<?= number_format($currentDiscount, 0) ?></p>
                 </div>
             </div>
-            <?php endif; ?>
+        </div>
 
-            <!-- Error Alert -->
-            <?php if ($error): ?>
-            <div class="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-6 shadow-md">
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-triangle text-2xl mr-3"></i>
-                    <span class="font-medium"><?= htmlspecialchars($error) ?></span>
-                </div>
-            </div>
-            <?php endif; ?>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
-            <!-- Booking Info Card -->
-            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 mb-6 border-2 border-blue-200">
-                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-info-circle text-blue-600"></i>
-                    ข้อมูลการจอง
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <span class="text-gray-600 text-sm">เลขที่จอง:</span>
-                        <span class="font-bold text-gray-800 ml-2">#<?= $booking['id'] ?></span>
-                    </div>
-                    <div>
-                        <span class="text-gray-600 text-sm">คอร์ต:</span>
-                        <span class="font-bold text-gray-800 ml-2">คอร์ต <?= htmlspecialchars($court['court_no']) ?></span>
-                    </div>
-                    <div>
-                        <span class="text-gray-600 text-sm">ผู้จอง:</span>
-                        <span class="font-bold text-gray-800 ml-2"><?= htmlspecialchars($booking['customer_name']) ?></span>
-                    </div>
-                    <div>
-                        <span class="text-gray-600 text-sm">เบอร์โทร:</span>
-                        <span class="font-bold text-gray-800 ml-2"><?= htmlspecialchars($booking['customer_phone']) ?></span>
-                    </div>
-                </div>
-            </div>
+            <!-- Form -->
+            <div class="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 style="color:#0C2C55;" class="font-semibold mb-4 text-sm">เลื่อนวันและเวลา</h3>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                <!-- Form Section -->
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border-2 border-gray-200 shadow-md">
-                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-purple-600"></i>
-                        เลื่อนวันและเวลา
-                    </h3>
-                    
-                    <form method="post" id="updateForm">
-                        <div class="space-y-4">
-                            
-                            <!-- Date -->
-                            <div>
-                                <label class="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                                    <i class="fas fa-calendar text-purple-600"></i>
-                                    วันที่ใหม่
-                                </label>
-                                <input type="date" name="date" required
-                                       value="<?= htmlspecialchars($currentDate) ?>"
-                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
-                            </div>
-
-                            <!-- Start Time -->
-                            <div>
-                                <label class="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                                    <i class="fas fa-clock text-purple-600"></i>
-                                    เวลาเริ่มต้นใหม่
-                                </label>
-                                <input type="time" name="start_time" required
-                                       value="<?= htmlspecialchars($currentTime) ?>"
-                                       min="06:00" max="23:00"
-                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
-                                <p class="text-xs text-gray-500 mt-1">⏰ เวลา 06:00-23:00 น.</p>
-                            </div>
-
-                            <!-- Hours -->
-                            <div>
-                                <label class="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                                    <i class="fas fa-hourglass-half text-purple-600"></i>
-                                    จำนวนชั่วโมง
-                                </label>
-                                <input type="number" name="hours" required
-                                       min="1" max="6" value="<?= $currentHours ?>"
-                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-300 outline-none">
-                            </div>
-
-                            <!-- Buttons -->
-                            <div class="flex flex-col gap-3 mt-6">
-                                <button type="submit" 
-                                        class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2">
-                                    <i class="fas fa-save text-xl"></i>
-                                    บันทึกการเปลี่ยนแปลง
-                                </button>
-                                <a href="index.php"
-                                   class="w-full border-2 border-gray-400 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 hover:border-gray-600 transition-all duration-300 flex items-center justify-center gap-2">
-                                    <i class="fas fa-arrow-left text-xl"></i>
-                                    กลับหน้ารายการจอง
-                                </a>
-                            </div>
-
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Summary Section -->
-                <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 shadow-2xl">
-                    
-                    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 mb-6">
-                        <h3 class="text-lg font-bold text-white flex items-center gap-2 m-0">
-                            <i class="fas fa-receipt"></i>
-                            สรุปการจอง
-                        </h3>
-                    </div>
-
+                <form method="post">
                     <div class="space-y-4">
-                        <!-- Price per hour -->
-                        <div class="bg-slate-700/50 rounded-xl p-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-purple-600/50 p-2 rounded-lg">
-                                    <i class="fas fa-money-bill-wave text-white"></i>
-                                </div>
-                                <span class="text-slate-300 text-sm font-medium">ราคาต่อชั่วโมง</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-white text-xl font-bold">
-                                    <?= number_format($currentPricePerHour, 0) ?>
-                                </div>
-                                <div class="text-slate-400 text-xs">บาท</div>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">วันที่ใหม่</label>
+                            <input type="date" name="date" required
+                                   value="<?= htmlspecialchars($currentDate) ?>"
+                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
                         </div>
 
-                        <!-- Hours -->
-                        <div class="bg-slate-700/50 rounded-xl p-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-blue-600/50 p-2 rounded-lg">
-                                    <i class="fas fa-clock text-white"></i>
-                                </div>
-                                <span class="text-slate-300 text-sm font-medium">จำนวนชั่วโมง</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-white text-xl font-bold"><?= $currentHours ?></div>
-                                <div class="text-slate-400 text-xs">ชั่วโมง</div>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">เวลาเริ่มต้นใหม่</label>
+                            <input type="time" name="start_time" required
+                                   value="<?= htmlspecialchars($currentTime) ?>"
+                                   min="06:00" max="23:00"
+                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
+                            <p class="text-xs text-gray-400 mt-1">06:00 - 23:00 น.</p>
                         </div>
 
-                        <!-- Subtotal -->
-                        <div class="bg-slate-700/50 rounded-xl p-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-indigo-600/50 p-2 rounded-lg">
-                                    <i class="fas fa-calculator text-white"></i>
-                                </div>
-                                <span class="text-slate-300 text-sm font-medium">รวมเงิน</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-white text-xl font-bold">
-                                    <?= number_format($currentSubtotal, 0) ?>
-                                </div>
-                                <div class="text-slate-400 text-xs">บาท</div>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">จำนวนชั่วโมง</label>
+                            <input type="number" name="hours" required
+                                   min="1" max="6" value="<?= $currentHours ?>"
+                                   class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#629FAD] focus:ring-2 focus:ring-[#629FAD]/20 outline-none text-sm">
                         </div>
 
-                        <!-- Discount -->
-                        <div class="bg-slate-700/50 rounded-xl p-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-yellow-600/50 p-2 rounded-lg">
-                                    <i class="fas fa-tag text-white"></i>
-                                </div>
-                                <span class="text-slate-300 text-sm font-medium">ส่วนลด</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-yellow-400 text-xl font-bold">
-                                    -<?= number_format($currentDiscount, 0) ?>
-                                </div>
-                                <div class="text-slate-400 text-xs">บาท</div>
-                            </div>
-                        </div>
-
-                        <!-- Total -->
-                        <div class="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-6 mt-6">
-                            <div class="text-center">
-                                <div class="text-white/90 text-sm mb-2 flex items-center justify-center gap-2">
-                                    <i class="fas fa-wallet"></i>
-                                    <span>ยอดชำระทั้งหมด</span>
-                                </div>
-                                <div class="text-white text-4xl font-black">
-                                    ฿<?= number_format($currentTotal, 0) ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Warning -->
-                        <div class="bg-orange-500/20 border border-orange-500/50 rounded-xl p-4 mt-4">
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-exclamation-triangle text-orange-400 text-lg mt-0.5"></i>
-                                <div class="text-sm text-orange-200">
-                                    <p class="font-semibold mb-1">⚠️ คำเตือน</p>
-                                    <p>• ราคาอาจเปลี่ยนตามเวลาที่เลือกใหม่</p>
-                                    <p>• ตรวจสอบว่าคอร์ตว่างในเวลาที่ต้องการ</p>
-                                </div>
-                            </div>
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit"
+                                    style="background:#296374;"
+                                    class="flex-1 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                                บันทึก
+                            </button>
+                            <a href="index.php"
+                               style="color:#296374; border-color:#629FAD;"
+                               class="flex-1 py-2.5 border text-sm font-medium rounded-lg text-center hover:bg-[#EDEDCE] transition-colors">
+                                กลับ
+                            </a>
                         </div>
                     </div>
+                </form>
+            </div>
 
+            <!-- Summary -->
+            <div style="background:#0C2C55;" class="rounded-xl p-6">
+                <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wide">สรุปยอดปัจจุบัน</h3>
+
+                <div class="space-y-3 mb-5">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-blue-200">ราคา/ชม.</span>
+                        <span class="text-white">฿<?= number_format($currentPricePerHour, 0) ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-blue-200">จำนวน</span>
+                        <span class="text-white"><?= $currentHours ?> ชม.</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-blue-200">รวม</span>
+                        <span class="text-white">฿<?= number_format($currentSubtotal, 0) ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-blue-200">ส่วนลด</span>
+                        <span style="color:#629FAD;">-฿<?= number_format($currentDiscount, 0) ?></span>
+                    </div>
                 </div>
 
+                <div style="background:#296374;" class="rounded-lg p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">ยอดชำระ</p>
+                    <p class="text-white text-3xl font-bold">฿<?= number_format($currentTotal, 0) ?></p>
+                </div>
+
+                <p class="text-blue-300 text-xs mt-4">หมายเหตุ: ราคาอาจเปลี่ยนตามเวลาที่เลือกใหม่</p>
             </div>
+
         </div>
     </div>
 
