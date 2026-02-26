@@ -1,14 +1,17 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (!isset($_SESSION['user'])) {
-header('Location: /auth/login.php');
-exit;
+    header('Location: /auth/login.php');
+    exit;
 }
-function require_role($roles = []) {
-if (!$roles) return; // allow any logged-in
-$role = $_SESSION['user']['role'] ?? 'user';
-if (!in_array($role, $roles)) {
-http_response_code(403);
-die('Forbidden');
-}
+function require_role(array $roles = []): void {
+    if (!$roles) return;
+    $role = $_SESSION['user']['role'] ?? 'user';
+    if (!in_array($role, $roles, true)) {
+        http_response_code(403);
+        header('Location: /auth/login.php?err=forbidden');
+        exit;
+    }
 }

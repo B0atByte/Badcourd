@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
 
 if (isset($_GET['toggle'])) {
     $id = (int)$_GET['toggle'];
-    $pdo->query("UPDATE users SET active = 1 - active WHERE id = $id");
+    $pdo->prepare("UPDATE users SET active = 1 - active WHERE id = ?")->execute([$id]);
     header('Location: users.php'); exit;
 }
 
@@ -27,12 +27,58 @@ if (isset($_GET['delete'])) {
     header('Location: users.php'); exit;
 }
 
-$users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
-
-$totalUsers = count($users);
-$activeUsers = count(array_filter($users, fn($u) => $u['active'] == 1));
+// Stats from ALL users (not filtered)
+$statsRow   = $pdo->query("SELECT COUNT(*) as total, SUM(active) as act, SUM(role='admin') as adm FROM users")->fetch();
+$totalUsers    = (int)$statsRow['total'];
+$activeUsers   = (int)$statsRow['act'];
 $inactiveUsers = $totalUsers - $activeUsers;
-$adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
+$adminCount    = (int)$statsRow['adm'];
+
+// Search / Filter / Pagination
+$search        = trim($_GET['search']  ?? '');
+$role_filter   = $_GET['role']   ?? '';
+$status_filter = $_GET['ustatus'] ?? '';
+$per_page_raw  = $_GET['per_page'] ?? 'all';
+$per_page      = ($per_page_raw === 'all') ? 0 : (int)$per_page_raw;
+if (!in_array($per_page, [0, 10, 25, 50, 100])) $per_page = 0;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$uWhere  = ['1=1'];
+$uParams = [];
+if (!empty($search)) {
+    $uWhere[]  = 'username LIKE :search';
+    $uParams[':search'] = '%' . $search . '%';
+}
+if (!empty($role_filter)) {
+    $uWhere[]  = 'role = :role';
+    $uParams[':role'] = $role_filter;
+}
+if ($status_filter === 'active') {
+    $uWhere[] = 'active = 1';
+} elseif ($status_filter === 'inactive') {
+    $uWhere[] = 'active = 0';
+}
+$uWhereClause = implode(' AND ', $uWhere);
+
+// Count
+$cntStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE $uWhereClause");
+$cntStmt->execute($uParams);
+$totalRecords = (int)$cntStmt->fetchColumn();
+
+// Pagination calc
+$totalPages = 1; $offset = 0;
+if ($per_page > 0) {
+    $totalPages = max(1, (int)ceil($totalRecords / $per_page));
+    $page       = min($page, $totalPages);
+    $offset     = ($page - 1) * $per_page;
+}
+
+// Fetch users (filtered + paginated)
+$uQuery = "SELECT * FROM users WHERE $uWhereClause ORDER BY id ASC";
+if ($per_page > 0) $uQuery .= " LIMIT $per_page OFFSET $offset";
+$uStmt = $pdo->prepare($uQuery);
+$uStmt->execute($uParams);
+$users = $uStmt->fetchAll();
 ?>
 <!doctype html>
 <html lang="th">
@@ -105,10 +151,62 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
     </form>
   </div>
 
+  <!-- Search / Filter -->
+  <div class="bg-white rounded-xl border border-gray-200 p-4 mb-5">
+    <form method="get" class="flex flex-col gap-3">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1">
+          <input type="text" name="search"
+                 value="<?= htmlspecialchars($search) ?>"
+                 placeholder="🔍 ค้นหาด้วยชื่อผู้ใช้..."
+                 class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+        </div>
+        <select name="role"
+                class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[140px]">
+          <option value="">ทุกสิทธิ์</option>
+          <option value="admin" <?= $role_filter === 'admin' ? 'selected' : '' ?>>ผู้ดูแลระบบ</option>
+          <option value="user"  <?= $role_filter === 'user'  ? 'selected' : '' ?>>ผู้ใช้งาน</option>
+        </select>
+        <select name="ustatus"
+                class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[130px]">
+          <option value="">ทุกสถานะ</option>
+          <option value="active"   <?= $status_filter === 'active'   ? 'selected' : '' ?>>ใช้งานอยู่</option>
+          <option value="inactive" <?= $status_filter === 'inactive' ? 'selected' : '' ?>>ปิดใช้งาน</option>
+        </select>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <label class="text-xs text-gray-500 whitespace-nowrap">แสดง</label>
+        <select name="per_page" onchange="this.form.submit()"
+                class="px-3 py-2 rounded-lg border border-gray-300 outline-none text-sm">
+          <option value="10"  <?= $per_page === 10  ? 'selected' : '' ?>>10 รายการ</option>
+          <option value="25"  <?= $per_page === 25  ? 'selected' : '' ?>>25 รายการ</option>
+          <option value="50"  <?= $per_page === 50  ? 'selected' : '' ?>>50 รายการ</option>
+          <option value="100" <?= $per_page === 100 ? 'selected' : '' ?>>100 รายการ</option>
+          <option value="all" <?= $per_page === 0   ? 'selected' : '' ?>>ทั้งหมด</option>
+        </select>
+        <div class="flex-1"></div>
+        <button type="submit"
+                style="background:#004A7C;"
+                class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+          ค้นหา
+        </button>
+        <?php if ($search !== '' || $role_filter !== '' || $status_filter !== ''): ?>
+        <a href="users.php"
+           class="px-5 py-2 text-gray-600 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+          ล้างตัวกรอง
+        </a>
+        <?php endif; ?>
+      </div>
+    </form>
+  </div>
+
   <!-- Users List -->
   <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <div style="background:#005691;" class="px-5 py-3">
-      <h2 class="text-white font-medium text-sm">รายชื่อผู้ใช้งานทั้งหมด</h2>
+    <div style="background:#005691;" class="px-5 py-3 flex justify-between items-center">
+      <h2 class="text-white font-medium text-sm">รายชื่อผู้ใช้งาน</h2>
+      <span class="text-blue-200 text-xs">
+        พบ <?= number_format($totalRecords) ?> รายการ<?= ($search !== '' || $role_filter !== '' || $status_filter !== '') ? ' (กรองแล้ว)' : '' ?>
+      </span>
     </div>
 
     <!-- Mobile -->
@@ -210,9 +308,15 @@ $adminCount = count(array_filter($users, fn($u) => $u['role'] === 'admin'));
       </table>
     </div>
 
-    <?php if(count($users) === 0): ?>
+    <?php if ($totalRecords === 0 && $search === '' && $role_filter === '' && $status_filter === ''): ?>
     <div class="p-10 text-center text-gray-400">ยังไม่มีผู้ใช้งาน</div>
+    <?php elseif (count($users) === 0): ?>
+    <div class="p-10 text-center text-gray-400">ไม่พบผู้ใช้งานที่ตรงกับการค้นหา</div>
     <?php endif; ?>
+    <!-- Pagination -->
+    <div class="px-5 pb-4">
+      <?php include __DIR__ . '/../includes/pagination.php'; ?>
+    </div>
   </div>
 
   <!-- Security note -->

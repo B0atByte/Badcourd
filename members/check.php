@@ -46,18 +46,34 @@ try {
     $stmt->execute([$phone]);
     $member = $stmt->fetch();
 
-    if ($member) {
-        // พบสมาชิก
+    // ดึงชื่อที่เคยใช้กับเบอร์นี้จากประวัติการจอง (เรียงจากล่าสุด)
+    $namesStmt = $pdo->prepare("
+        SELECT customer_name
+        FROM (
+            SELECT customer_name, MAX(created_at) AS last_used
+            FROM bookings
+            WHERE customer_phone = ? AND customer_name != '' AND status != 'cancelled'
+            GROUP BY customer_name
+        ) sub
+        ORDER BY last_used DESC
+    ");
+    $namesStmt->execute([$phone]);
+    $pastNames = array_column($namesStmt->fetchAll(), 'customer_name');
 
-        // คำนวณส่วนลดตามระดับสมาชิก
+    if ($member) {
+        // พบสมาชิก — รวมชื่อสมาชิกไว้ด้านหน้า (ถ้ายังไม่มีใน list)
         $discounts = [
             'Bronze' => 0,
             'Silver' => 5,
             'Gold' => 10,
             'Platinum' => 15
         ];
-
         $discount_percent = $discounts[$member['member_level']] ?? 0;
+
+        // รวม member name ไว้ก่อน แล้วตามด้วยชื่ออื่นจาก booking history
+        $allNames = array_values(array_unique(
+            array_merge([$member['name']], $pastNames)
+        ));
 
         echo json_encode([
             'success' => true,
@@ -76,13 +92,17 @@ try {
                 'last_booking_date' => $member['last_booking_date'],
                 'birth_date' => $member['birth_date']
             ],
+            'names' => $allNames,
             'message' => 'พบข้อมูลสมาชิก'
         ], JSON_UNESCAPED_UNICODE);
     } else {
-        // ไม่พบสมาชิก
+        // ไม่พบสมาชิก — แต่อาจมีประวัติการจองเก่า
+        $allNames = array_values(array_unique($pastNames));
+
         echo json_encode([
             'success' => true,
             'is_member' => false,
+            'names' => $allNames,
             'message' => 'ไม่พบข้อมูลสมาชิก (จะลงทะเบียนอัตโนมัติเมื่อจองสำเร็จ)'
         ], JSON_UNESCAPED_UNICODE);
     }

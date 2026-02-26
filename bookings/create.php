@@ -13,6 +13,10 @@ if (!isset($_SESSION['user'])) {
 }
 
 $courts = $pdo->query("SELECT * FROM courts WHERE status <> 'Maintenance' ORDER BY court_type DESC, vip_room_name ASC, court_no")->fetchAll();
+$today = date('Y-m-d');
+$promoQuery = $pdo->prepare("SELECT id, code, name, discount_percent FROM promotions WHERE is_active = 1 AND start_date <= ? AND end_date >= ? ORDER BY name ASC");
+$promoQuery->execute([$today, $today]);
+$activePromos = $promoQuery->fetchAll();
 $success = $error = '';
 
 $posted_court_id = '';
@@ -22,6 +26,7 @@ $posted_date = date('Y-m-d');
 $posted_start_time = '16:00';
 $posted_hours = 2;
 $posted_discount = 0;
+$posted_promotion_id = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $court_id = (int)$_POST['court_id'];
@@ -39,6 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $posted_start_time = $start_time;
     $posted_hours = $hours;
     $posted_discount = $discount;
+    $promotion_id = !empty($_POST['promotion_id']) ? (int)$_POST['promotion_id'] : null;
+    $promo_code_input = strtoupper(trim($_POST['promo_code'] ?? ''));
+    $posted_promotion_id = $promotion_id;
 
     $start = new DateTime($date . ' ' . $start_time);
     if (has_overlap($court_id, $start, $hours)) {
@@ -81,66 +89,127 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Insert booking with member_id
-        $stmt = $pdo->prepare('INSERT INTO bookings(
-            court_id, customer_name, customer_phone, member_id, start_datetime,
-            duration_hours, price_per_hour, discount_amount, total_amount, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-
-        $stmt->execute([
-            $court_id, $customer_name, $customer_phone, $member_id,
-            $start->format('Y-m-d H:i:s'),
-            $hours, $pph, $discount, $total, $created_by
-        ]);
-
-        $booking_id = $pdo->lastInsertId();
-
-        // Update member stats and award points
-        if ($member_id) {
-            // Calculate points: 1 point per 100 baht spent
-            $points_earned = floor($total / 100);
-
-            // Update member statistics
-            $updateMember = $pdo->prepare("
-                UPDATE members
-                SET total_bookings = total_bookings + 1,
-                    total_spent = total_spent + ?,
-                    points = points + ?,
-                    last_booking_date = NOW(),
-                    member_level = CASE
-                        WHEN total_spent + ? >= 20000 THEN 'Platinum'
-                        WHEN total_spent + ? >= 10000 THEN 'Gold'
-                        WHEN total_spent + ? >= 5000 THEN 'Silver'
-                        ELSE 'Bronze'
-                    END
-                WHERE id = ?
-            ");
-            $updateMember->execute([$total, $points_earned, $total, $total, $total, $member_id]);
-
-            // Record point transaction
-            if ($points_earned > 0) {
-                $pointTxn = $pdo->prepare("
-                    INSERT INTO point_transactions (member_id, booking_id, points, type, description, created_by)
-                    VALUES (?, ?, ?, 'earn', ?, ?)
-                ");
-                $pointTxn->execute([
-                    $member_id,
-                    $booking_id,
-                    $points_earned,
-                    "รับแต้มจากการจอง (฿" . number_format($total, 0) . ")",
-                    $created_by
-                ]);
+        // Promotion validation (promo replaces member discount)
+        $applied_promotion_id = null;
+        $applied_promo_percent = 0.0;
+        if ($promotion_id) {
+            $promoCheck = $pdo->prepare("SELECT id, name, discount_percent FROM promotions WHERE id = ? AND is_active = 1 AND start_date <= ? AND end_date >= ?");
+            $promoCheck->execute([$promotion_id, $start->format('Y-m-d'), $start->format('Y-m-d')]);
+            $promoRow = $promoCheck->fetch();
+            if ($promoRow) {
+                $applied_promotion_id = $promoRow['id'];
+                $applied_promo_percent = (float)$promoRow['discount_percent'];
+            }
+        } elseif (!empty($promo_code_input)) {
+            $promoCheck = $pdo->prepare("SELECT id, name, discount_percent FROM promotions WHERE code = ? AND is_active = 1 AND start_date <= ? AND end_date >= ?");
+            $promoCheck->execute([$promo_code_input, $start->format('Y-m-d'), $start->format('Y-m-d')]);
+            $promoRow = $promoCheck->fetch();
+            if ($promoRow) {
+                $applied_promotion_id = $promoRow['id'];
+                $applied_promo_percent = (float)$promoRow['discount_percent'];
+            } else {
+                $error = 'รหัสโปรโมชั่นไม่ถูกต้อง หรือโปรโมชั่นหมดอายุแล้ว';
             }
         }
 
-        $success = 'จองสำเร็จ' . ($member_id && $points_earned > 0 ? " (ได้รับแต้ม +" . $points_earned . ")" : "");
-        $posted_court_id = '';
-        $posted_customer_name = '';
-        $posted_customer_phone = '';
-        $posted_date = date('Y-m-d');
-        $posted_start_time = '16:00';
-        $posted_hours = 2;
-        $posted_discount = 0;
+        if ($applied_promotion_id) {
+            $discount = (int)floor($pph * $hours * $applied_promo_percent / 100);
+            $total = compute_total($pph, $hours, $discount);
+        }
+
+        if (!$error) {
+            // Insert booking with member_id and promotion
+            $stmt = $pdo->prepare('INSERT INTO bookings(
+                court_id, customer_name, customer_phone, member_id, start_datetime,
+                duration_hours, price_per_hour, discount_amount, total_amount,
+                promotion_id, promotion_discount_percent, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+
+            $stmt->execute([
+                $court_id, $customer_name, $customer_phone, $member_id,
+                $start->format('Y-m-d H:i:s'),
+                $hours, $pph, $discount, $total,
+                $applied_promotion_id,
+                $applied_promotion_id ? $applied_promo_percent : null,
+                $created_by
+            ]);
+
+            $booking_id = $pdo->lastInsertId();
+
+            // Update member stats and award points
+            $points_earned = 0;
+            if ($member_id) {
+                // Calculate points: 1 point per 100 baht spent
+                $points_earned = floor($total / 100);
+
+                // Update member statistics
+                $updateMember = $pdo->prepare("
+                    UPDATE members
+                    SET total_bookings = total_bookings + 1,
+                        total_spent = total_spent + ?,
+                        points = points + ?,
+                        last_booking_date = NOW(),
+                        member_level = CASE
+                            WHEN total_spent + ? >= 20000 THEN 'Platinum'
+                            WHEN total_spent + ? >= 10000 THEN 'Gold'
+                            WHEN total_spent + ? >= 5000 THEN 'Silver'
+                            ELSE 'Bronze'
+                        END
+                    WHERE id = ?
+                ");
+                $updateMember->execute([$total, $points_earned, $total, $total, $total, $member_id]);
+
+                // Record point transaction
+                if ($points_earned > 0) {
+                    $pointTxn = $pdo->prepare("
+                        INSERT INTO point_transactions (member_id, booking_id, points, type, description, created_by)
+                        VALUES (?, ?, ?, 'earn', ?, ?)
+                    ");
+                    $pointTxn->execute([
+                        $member_id,
+                        $booking_id,
+                        $points_earned,
+                        "รับแต้มจากการจอง (฿" . number_format($total, 0) . ")",
+                        $created_by
+                    ]);
+                }
+            }
+
+            // Payment slip upload (optional)
+            $slip_warning = '';
+            if (isset($_FILES['payment_slip']) && $_FILES['payment_slip']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['payment_slip'];
+                $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+                $maxSize = 10 * 1024 * 1024; // 10MB
+
+                if (!in_array($ext, $allowed)) {
+                    $slip_warning = 'รูปสลิปต้องเป็น JPG, PNG หรือ WEBP เท่านั้น';
+                } elseif ($file['size'] > $maxSize) {
+                    $slip_warning = 'ขนาดไฟล์สลิปต้องไม่เกิน 10MB';
+                } else {
+                    $filename   = 'slip_' . $booking_id . '_' . uniqid() . '.' . $ext;
+                    $uploadPath = __DIR__ . '/../uploads/slips/' . $filename;
+                    if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+                        $pdo->prepare('UPDATE bookings SET payment_slip_path = ? WHERE id = ?')
+                            ->execute(['uploads/slips/' . $filename, $booking_id]);
+                    } else {
+                        $slip_warning = 'ไม่สามารถบันทึกไฟล์สลิปได้';
+                    }
+                }
+            }
+
+            $success = 'จองสำเร็จ' . ($member_id && $points_earned > 0 ? " (ได้รับแต้ม +" . $points_earned . ")" : "")
+                     . ($slip_warning ? ' — ⚠️ ' . $slip_warning : '');
+            $posted_court_id = '';
+            $posted_customer_name = '';
+            $posted_customer_phone = '';
+            $posted_date = date('Y-m-d');
+            $posted_start_time = '16:00';
+            $posted_hours = 2;
+            $posted_discount = 0;
+            $posted_promotion_id = null;
+        }
     }
 }
 
@@ -227,7 +296,7 @@ function getCourtDisplayName($court) {
 
             <!-- Form -->
             <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
-                <form method="post" id="bookingForm">
+                <form method="post" id="bookingForm" enctype="multipart/form-data">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                         <div class="md:col-span-2">
@@ -270,10 +339,15 @@ function getCourtDisplayName($court) {
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อผู้จอง</label>
-                            <input type="text" name="customer_name" required
+                            <input type="text" name="customer_name" id="customerNameInput" required
                                    value="<?= htmlspecialchars($posted_customer_name) ?>"
                                    placeholder="กรอกชื่อผู้จอง"
                                    class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                            <!-- ชื่อที่เคยใช้กับเบอร์นี้ -->
+                            <div id="nameChipsWrap" class="hidden mt-2">
+                                <p class="text-xs text-gray-500 mb-1.5">เลือกชื่อที่เคยใช้:</p>
+                                <div id="nameChips" class="flex flex-wrap gap-1.5"></div>
+                            </div>
                         </div>
 
                         <div>
@@ -363,6 +437,87 @@ function getCourtDisplayName($court) {
                                    value="<?= $posted_discount ?>"
                                    oninput="updatePriceDisplay()"
                                    class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                        </div>
+
+                        <!-- Promotion Section -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">โปรโมชั่น (ไม่บังคับ)</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">เลือกจากรายการ</label>
+                                    <select id="promoSelect" name="promotion_id" onchange="onPromoDropdownChange()"
+                                            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                        <option value="">— ไม่ใช้โปรโมชั่น —</option>
+                                        <?php foreach ($activePromos as $p): ?>
+                                        <option value="<?= $p['id'] ?>"
+                                                data-percent="<?= $p['discount_percent'] ?>"
+                                                data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
+                                                data-code="<?= htmlspecialchars($p['code'], ENT_QUOTES) ?>"
+                                                <?= $posted_promotion_id == $p['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($p['name']) ?> (<?= $p['discount_percent'] ?>%)
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">หรือกรอกรหัสโปรโมชั่น</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="promoCodeInput" name="promo_code"
+                                               maxlength="30" placeholder="เช่น STAFF15"
+                                               oninput="this.value = this.value.toUpperCase()"
+                                               style="text-transform:uppercase"
+                                               class="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                        <button type="button" onclick="checkPromoCode()"
+                                                style="background:#004A7C;"
+                                                class="px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+                                            ตรวจสอบ
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="promoInfoBox" class="mt-2 hidden">
+                                <div id="promoFound" class="hidden bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-700">
+                                    <span class="font-semibold">ส่วนลดโปรโมชั่น:</span>
+                                    <span id="promoNameDisplay"></span>
+                                    <span id="promoPercentDisplay" class="font-bold"></span>%
+                                    <span class="text-green-500 ml-1">(แทนส่วนลดสมาชิก)</span>
+                                </div>
+                                <div id="promoNotFound" class="hidden bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-600">
+                                    ไม่พบโปรโมชั่น หรือโปรโมชั่นหมดอายุแล้ว
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Slip Upload -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                                แนบสลิปการชำระเงิน
+                                <span class="text-gray-400 font-normal text-xs ml-1">(ไม่บังคับ · JPG, PNG, WEBP ไม่เกิน 10MB)</span>
+                            </label>
+                            <div class="flex items-center gap-3">
+                                <label for="slipInput"
+                                       style="border-color:#E8F1F5; color:#004A7C;"
+                                       class="cursor-pointer flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm hover:bg-[#FAFAFA] transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span id="slipLabel">เลือกรูปสลิป</span>
+                                </label>
+                                <button type="button" id="slipClearBtn" onclick="clearSlip()"
+                                        class="hidden text-xs text-red-400 hover:text-red-600">
+                                    ✕ ลบ
+                                </button>
+                                <input type="file" name="payment_slip" id="slipInput"
+                                       accept="image/jpeg,image/png,image/webp"
+                                       class="sr-only"
+                                       onchange="previewSlip(this)">
+                            </div>
+                            <!-- Preview -->
+                            <div id="slipPreviewWrap" class="hidden mt-3">
+                                <img id="slipPreview"
+                                     class="max-h-48 rounded-xl border border-gray-200 object-contain shadow-sm">
+                            </div>
                         </div>
 
                         <div class="md:col-span-2 flex gap-3 mt-2">
@@ -472,8 +627,12 @@ function getCourtDisplayName($court) {
     function updateDisplayWithPrice(price, hours, discount, courtName, rule, isVip) {
         const subtotal = price * hours;
 
-        // Auto-update member discount if member is logged in
-        if (currentMemberData && currentMemberData.discount_percent > 0) {
+        // Promo overrides member discount; fallback to member discount if no promo
+        if (currentPromoData && currentPromoData.discount_percent > 0) {
+            const promoDiscount = Math.floor(subtotal * currentPromoData.discount_percent / 100);
+            document.getElementById('discountInput').value = promoDiscount;
+            discount = promoDiscount;
+        } else if (currentMemberData && currentMemberData.discount_percent > 0) {
             const memberDiscount = Math.floor(subtotal * currentMemberData.discount_percent / 100);
             document.getElementById('discountInput').value = memberDiscount;
             discount = memberDiscount;
@@ -507,9 +666,127 @@ function getCourtDisplayName($court) {
         updatePriceDisplay();
     }
 
+    // Promotion state
+    let currentPromoData = null;
+
+    function onPromoDropdownChange() {
+        const select = document.getElementById('promoSelect');
+        const selected = select.options[select.selectedIndex];
+        document.getElementById('promoCodeInput').value = '';
+
+        if (select.value === '') {
+            currentPromoData = null;
+            hidePromoInfo();
+        } else {
+            currentPromoData = {
+                id:               parseInt(select.value),
+                name:             selected.getAttribute('data-name'),
+                discount_percent: parseFloat(selected.getAttribute('data-percent')),
+                code:             selected.getAttribute('data-code')
+            };
+            showPromoInfo(currentPromoData.name, currentPromoData.discount_percent);
+        }
+        updatePriceDisplay();
+    }
+
+    function checkPromoCode() {
+        const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+        if (!code) return;
+
+        document.getElementById('promoSelect').value = '';
+        currentPromoData = null;
+        hidePromoInfo();
+
+        fetch(`/bookings/check_promotion.php?code=${encodeURIComponent(code)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.found) {
+                    currentPromoData = {
+                        id:               data.promotion.id,
+                        name:             data.promotion.name,
+                        discount_percent: data.promotion.discount_percent,
+                        code:             data.promotion.code
+                    };
+                    showPromoInfo(data.promotion.name, data.promotion.discount_percent);
+
+                    // Sync dropdown if this code exists in the list
+                    const select = document.getElementById('promoSelect');
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].getAttribute('data-code') === data.promotion.code) {
+                            select.selectedIndex = i;
+                            break;
+                        }
+                    }
+                } else {
+                    document.getElementById('promoInfoBox').classList.remove('hidden');
+                    document.getElementById('promoFound').classList.add('hidden');
+                    document.getElementById('promoNotFound').classList.remove('hidden');
+                }
+                updatePriceDisplay();
+            })
+            .catch(() => {
+                document.getElementById('promoInfoBox').classList.remove('hidden');
+                document.getElementById('promoNotFound').classList.remove('hidden');
+            });
+    }
+
+    function showPromoInfo(name, percent) {
+        document.getElementById('promoInfoBox').classList.remove('hidden');
+        document.getElementById('promoFound').classList.remove('hidden');
+        document.getElementById('promoNotFound').classList.add('hidden');
+        document.getElementById('promoNameDisplay').textContent = name + ' ';
+        document.getElementById('promoPercentDisplay').textContent = percent;
+    }
+
+    function hidePromoInfo() {
+        document.getElementById('promoInfoBox').classList.add('hidden');
+        document.getElementById('promoFound').classList.add('hidden');
+        document.getElementById('promoNotFound').classList.add('hidden');
+    }
+
     // Member Check Functionality
     let memberCheckTimeout = null;
     let currentMemberData = null;
+
+    function renderNameChips(names) {
+        const wrap = document.getElementById('nameChipsWrap');
+        const container = document.getElementById('nameChips');
+        container.innerHTML = '';
+        if (!names || names.length <= 1) {
+            wrap.classList.add('hidden');
+            return;
+        }
+        names.forEach(name => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = name;
+            btn.className = 'px-2.5 py-1 text-xs rounded-full border border-[#005691] text-[#005691] hover:bg-[#005691] hover:text-white transition-colors cursor-pointer';
+            btn.addEventListener('click', () => {
+                document.getElementById('customerNameInput').value = name;
+                // Highlight selected
+                container.querySelectorAll('button').forEach(b => {
+                    b.classList.remove('bg-[#005691]', 'text-white');
+                    b.classList.add('text-[#005691]');
+                });
+                btn.classList.add('bg-[#005691]', 'text-white');
+                btn.classList.remove('text-[#005691]');
+            });
+            container.appendChild(btn);
+        });
+        // Auto-select first chip
+        if (container.firstChild) {
+            container.firstChild.classList.add('bg-[#005691]', 'text-white');
+            container.firstChild.classList.remove('text-[#005691]');
+        }
+        wrap.classList.remove('hidden');
+    }
+
+    function clearNameChips() {
+        const wrap = document.getElementById('nameChipsWrap');
+        const container = document.getElementById('nameChips');
+        if (container) container.innerHTML = '';
+        if (wrap) wrap.classList.add('hidden');
+    }
 
     function checkMemberOnPhoneInput() {
         const phone = document.getElementById('phoneInput').value;
@@ -529,6 +806,7 @@ function getCourtDisplayName($court) {
         memberFound.classList.add('hidden');
         memberNew.classList.add('hidden');
         currentMemberData = null;
+        clearNameChips();
 
         // Check if phone is 10 digits
         if (phone.length === 10) {
@@ -554,10 +832,14 @@ function getCourtDisplayName($court) {
                             document.getElementById('memberDiscount').textContent = data.member.discount_percent;
                             document.getElementById('memberBookings').textContent = data.member.total_bookings;
 
-                            // Auto-fill customer name
-                            const nameInput = document.querySelector('input[name="customer_name"]');
-                            if (!nameInput.value || nameInput.value === '') {
-                                nameInput.value = data.member.name;
+                            // Auto-fill or show name chips
+                            const nameInput = document.getElementById('customerNameInput');
+                            const names = data.names || [data.member.name];
+                            if (names.length > 1) {
+                                renderNameChips(names);
+                                if (!nameInput.value) nameInput.value = names[0];
+                            } else {
+                                if (!nameInput.value) nameInput.value = names[0] || data.member.name;
                             }
 
                             // Calculate and apply member discount
@@ -571,6 +853,17 @@ function getCourtDisplayName($court) {
                         } else if (data.success && !data.is_member) {
                             // New member
                             memberNew.classList.remove('hidden');
+                            // Show past names if any
+                            const names = data.names || [];
+                            if (names.length > 0) {
+                                const nameInput = document.getElementById('customerNameInput');
+                                if (names.length === 1) {
+                                    if (!nameInput.value) nameInput.value = names[0];
+                                } else {
+                                    renderNameChips(names);
+                                    if (!nameInput.value) nameInput.value = names[0];
+                                }
+                            }
                         }
                     })
                     .catch(error => {
@@ -580,6 +873,35 @@ function getCourtDisplayName($court) {
                     });
             }, 500);
         }
+    }
+
+    // Slip preview
+    function previewSlip(input) {
+        const preview = document.getElementById('slipPreview');
+        const wrap    = document.getElementById('slipPreviewWrap');
+        const label   = document.getElementById('slipLabel');
+        const clearBtn = document.getElementById('slipClearBtn');
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            label.textContent = file.name.length > 24 ? file.name.substring(0, 21) + '...' : file.name;
+            clearBtn.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                wrap.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function clearSlip() {
+        document.getElementById('slipInput').value = '';
+        document.getElementById('slipPreview').src = '';
+        document.getElementById('slipPreviewWrap').classList.add('hidden');
+        document.getElementById('slipLabel').textContent = 'เลือกรูปสลิป';
+        document.getElementById('slipClearBtn').classList.add('hidden');
     }
 
     document.addEventListener('DOMContentLoaded', function() {

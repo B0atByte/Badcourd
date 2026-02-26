@@ -1,7 +1,14 @@
 FROM php:8.2-apache
 
-# ติดตั้ง PDO และ MySQLi extension
-RUN docker-php-ext-install pdo pdo_mysql mysqli
+# ติดตั้ง PHP extensions
+RUN apt-get update && apt-get install -y \
+        libpng-dev libjpeg-dev libfreetype6-dev libzip-dev unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_mysql mysqli gd zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ติดตั้ง Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # เปิดใช้งาน mod_rewrite
 RUN a2enmod rewrite
@@ -19,6 +26,9 @@ RUN echo "AddType application/x-httpd-php .php" >> /etc/apache2/apache2.conf
 
 # คัดลอกไฟล์ทั้งหมดไปยัง container
 COPY . /var/www/html
+
+# ติดตั้ง PHP dependencies
+RUN cd /var/www/html && composer install --no-dev --no-interaction
 
 # ตั้งค่า permissions
 RUN chown -R www-data:www-data /var/www/html \

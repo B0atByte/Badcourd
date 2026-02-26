@@ -4,3 +4,7 @@ vendor/
 *.log
 composer.lock
 .claude/
+
+# Uploaded files — keep folder, ignore actual files
+uploads/slips/*
+!uploads/slips/.gitkeep

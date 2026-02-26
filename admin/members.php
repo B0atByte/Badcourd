@@ -57,39 +57,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Search and filter
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$level_filter = isset($_GET['level']) ? $_GET['level'] : '';
-$status_filter = isset($_GET['status']) ? $_GET['status'] : '';
+$search       = trim($_GET['search'] ?? '');
+$level_filter = $_GET['level']  ?? '';
+$status_filter = $_GET['status'] ?? '';
 
-$where = ['1=1'];
+// Pagination
+$per_page_raw = $_GET['per_page'] ?? '25';
+$per_page     = ($per_page_raw === 'all') ? 0 : (int)$per_page_raw;
+if (!in_array($per_page, [0, 10, 25, 50, 100])) $per_page = 25;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$where  = ['1=1'];
 $params = [];
 
 if (!empty($search)) {
-    $where[] = '(phone LIKE ? OR name LIKE ?)';
-    $searchParam = '%' . $search . '%';
-    $params[] = $searchParam;
-    $params[] = $searchParam;
+    $where[]  = '(phone LIKE ? OR name LIKE ?)';
+    $sp       = '%' . $search . '%';
+    $params[] = $sp;
+    $params[] = $sp;
 }
-
 if (!empty($level_filter)) {
-    $where[] = 'member_level = ?';
+    $where[]  = 'member_level = ?';
     $params[] = $level_filter;
 }
-
 if (!empty($status_filter)) {
-    $where[] = 'status = ?';
+    $where[]  = 'status = ?';
     $params[] = $status_filter;
 }
 
 $whereClause = implode(' AND ', $where);
 
+// Total count
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM members WHERE $whereClause");
+$countStmt->execute($params);
+$totalRecords = (int)$countStmt->fetchColumn();
+
+// Pagination calc
+$totalPages = 1;
+$offset     = 0;
+if ($per_page > 0) {
+    $totalPages = max(1, (int)ceil($totalRecords / $per_page));
+    $page       = min($page, $totalPages);
+    $offset     = ($page - 1) * $per_page;
+}
+
 // Get members
-$stmt = $pdo->prepare("
-    SELECT *
-    FROM members
-    WHERE $whereClause
-    ORDER BY total_spent DESC, joined_date DESC
-");
+$sql = "SELECT * FROM members WHERE $whereClause ORDER BY total_spent DESC, joined_date DESC";
+if ($per_page > 0) $sql .= " LIMIT $per_page OFFSET $offset";
+$stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $members = $stmt->fetchAll();
 
@@ -164,49 +179,72 @@ $levelColors = [
         </div>
 
         <!-- Search & Filter -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <form method="get" class="flex flex-col sm:flex-row gap-3">
-                <div class="flex-1">
-                    <input type="text"
-                           name="search"
-                           value="<?= htmlspecialchars($search) ?>"
-                           placeholder="ค้นหาด้วยเบอร์โทรหรือชื่อ..."
-                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+            <form method="get" class="flex flex-col gap-3">
+                <!-- Row 1: Search + Filters -->
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <input type="text" name="search"
+                               value="<?= htmlspecialchars($search) ?>"
+                               placeholder="🔍 ค้นหาด้วยเบอร์โทรหรือชื่อ..."
+                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    </div>
+                    <select name="level"
+                            class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[130px]">
+                        <option value="">ทุกระดับ</option>
+                        <option value="Bronze"   <?= $level_filter === 'Bronze'   ? 'selected' : '' ?>>Bronze</option>
+                        <option value="Silver"   <?= $level_filter === 'Silver'   ? 'selected' : '' ?>>Silver</option>
+                        <option value="Gold"     <?= $level_filter === 'Gold'     ? 'selected' : '' ?>>Gold</option>
+                        <option value="Platinum" <?= $level_filter === 'Platinum' ? 'selected' : '' ?>>Platinum</option>
+                    </select>
+                    <select name="status"
+                            class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[120px]">
+                        <option value="">ทุกสถานะ</option>
+                        <option value="active"   <?= $status_filter === 'active'   ? 'selected' : '' ?>>Active</option>
+                        <option value="inactive" <?= $status_filter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                    </select>
                 </div>
-
-                <select name="level"
-                        class="px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
-                    <option value="">ทุกระดับ</option>
-                    <option value="Bronze" <?= $level_filter === 'Bronze' ? 'selected' : '' ?>>Bronze</option>
-                    <option value="Silver" <?= $level_filter === 'Silver' ? 'selected' : '' ?>>Silver</option>
-                    <option value="Gold" <?= $level_filter === 'Gold' ? 'selected' : '' ?>>Gold</option>
-                    <option value="Platinum" <?= $level_filter === 'Platinum' ? 'selected' : '' ?>>Platinum</option>
-                </select>
-
-                <select name="status"
-                        class="px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
-                    <option value="">ทุกสถานะ</option>
-                    <option value="active" <?= $status_filter === 'active' ? 'selected' : '' ?>>Active</option>
-                    <option value="inactive" <?= $status_filter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                </select>
-
-                <button type="submit"
-                        style="background:#005691;"
-                        class="px-6 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-                    ค้นหา
-                </button>
-
-                <?php if (!empty($search) || !empty($level_filter) || !empty($status_filter)): ?>
-                <a href="/admin/members.php"
-                   class="px-6 py-2.5 text-gray-600 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-center">
-                    ล้าง
-                </a>
-                <?php endif; ?>
+                <!-- Row 2: Per-page + Buttons -->
+                <div class="flex flex-wrap gap-2 items-center">
+                    <label class="text-xs text-gray-500 whitespace-nowrap">แสดง</label>
+                    <select name="per_page" onchange="this.form.submit()"
+                            class="px-3 py-2 rounded-lg border border-gray-300 outline-none text-sm">
+                        <option value="10"  <?= $per_page === 10  ? 'selected' : '' ?>>10 รายการ</option>
+                        <option value="25"  <?= $per_page === 25  ? 'selected' : '' ?>>25 รายการ</option>
+                        <option value="50"  <?= $per_page === 50  ? 'selected' : '' ?>>50 รายการ</option>
+                        <option value="100" <?= $per_page === 100 ? 'selected' : '' ?>>100 รายการ</option>
+                        <option value="all" <?= $per_page === 0   ? 'selected' : '' ?>>ทั้งหมด</option>
+                    </select>
+                    <div class="flex-1"></div>
+                    <button type="submit"
+                            style="background:#005691;"
+                            class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                        ค้นหา
+                    </button>
+                    <?php if ($search !== '' || $level_filter !== '' || $status_filter !== ''): ?>
+                    <a href="/admin/members.php"
+                       class="px-5 py-2 text-gray-600 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        ล้างตัวกรอง
+                    </a>
+                    <?php endif; ?>
+                </div>
             </form>
         </div>
 
         <!-- Members Table -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <!-- Table header with count -->
+            <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <span class="text-sm text-gray-600 font-medium">
+                    พบ <span style="color:#005691;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
+                    <?php if ($search !== '' || $level_filter !== '' || $status_filter !== ''): ?>
+                    <span class="text-gray-400 text-xs">(กรองแล้ว)</span>
+                    <?php endif; ?>
+                </span>
+                <?php if ($per_page > 0 && $totalPages > 1): ?>
+                <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
+                <?php endif; ?>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead style="background:#FAFAFA;">
@@ -303,6 +341,8 @@ $levelColors = [
                     </tbody>
                 </table>
             </div>
+            <!-- Pagination -->
+            <?php include __DIR__ . '/../includes/pagination.php'; ?>
         </div>
 
     </div>

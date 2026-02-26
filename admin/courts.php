@@ -86,14 +86,62 @@ if (isset($_GET['delete'])) {
     header('Location: courts.php?deleted=1'); exit;
 }
 
-$courts = $pdo->query('SELECT * FROM courts ORDER BY court_type DESC, vip_room_name ASC, court_no ASC')->fetchAll();
+// Stats from ALL courts (not filtered)
+$allCourts = $pdo->query('SELECT court_type, is_vip, status FROM courts')->fetchAll();
+$totalCourts      = count($allCourts);
+$vipCourts        = count(array_filter($allCourts, fn($c) => $c['court_type'] === 'vip'       || $c['is_vip'] == 1));
+$normalCourts     = count(array_filter($allCourts, fn($c) => $c['court_type'] === 'normal'    || $c['is_vip'] == 0));
+$availableCourts  = count(array_filter($allCourts, fn($c) => $c['status'] === 'Available'));
+$inUseCourts      = count(array_filter($allCourts, fn($c) => $c['status'] === 'In Use'));
+$maintenanceCourts = count(array_filter($allCourts, fn($c) => $c['status'] === 'Maintenance'));
 
-$totalCourts = count($courts);
-$vipCourts = count(array_filter($courts, fn($c) => $c['court_type'] === 'vip' || $c['is_vip'] == 1));
-$normalCourts = count(array_filter($courts, fn($c) => $c['court_type'] === 'normal' || $c['is_vip'] == 0));
-$availableCourts = count(array_filter($courts, fn($c) => $c['status'] === 'Available'));
-$inUseCourts = count(array_filter($courts, fn($c) => $c['status'] === 'In Use'));
-$maintenanceCourts = count(array_filter($courts, fn($c) => $c['status'] === 'Maintenance'));
+// Search / Filter / Pagination
+$search        = trim($_GET['search']  ?? '');
+$type_filter   = $_GET['type']   ?? '';
+$status_filter = $_GET['cstatus'] ?? '';   // 'cstatus' to avoid clash with POST 'status'
+$per_page_raw  = $_GET['per_page'] ?? 'all';
+$per_page      = ($per_page_raw === 'all') ? 0 : (int)$per_page_raw;
+if (!in_array($per_page, [0, 10, 25, 50, 100])) $per_page = 0;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$cWhere  = ['1=1'];
+$cParams = [];
+if (!empty($search)) {
+    $cWhere[]  = '(vip_room_name LIKE ? OR CAST(court_no AS CHAR) LIKE ?)';
+    $sp        = '%' . $search . '%';
+    $cParams[] = $sp;
+    $cParams[] = $sp;
+}
+if ($type_filter === 'vip') {
+    $cWhere[] = 'court_type = "vip"';
+} elseif ($type_filter === 'normal') {
+    $cWhere[] = 'court_type = "normal"';
+}
+if (!empty($status_filter)) {
+    $cWhere[]  = 'status = ?';
+    $cParams[] = $status_filter;
+}
+$cWhereClause = implode(' AND ', $cWhere);
+
+// Count
+$cntStmt = $pdo->prepare("SELECT COUNT(*) FROM courts WHERE $cWhereClause");
+$cntStmt->execute($cParams);
+$totalRecords = (int)$cntStmt->fetchColumn();
+
+// Pagination calc
+$totalPages = 1; $offset = 0;
+if ($per_page > 0) {
+    $totalPages = max(1, (int)ceil($totalRecords / $per_page));
+    $page       = min($page, $totalPages);
+    $offset     = ($page - 1) * $per_page;
+}
+
+// Fetch courts (filtered + paginated)
+$cQuery = "SELECT * FROM courts WHERE $cWhereClause ORDER BY court_type DESC, vip_room_name ASC, court_no ASC";
+if ($per_page > 0) $cQuery .= " LIMIT $per_page OFFSET $offset";
+$cStmt = $pdo->prepare($cQuery);
+$cStmt->execute($cParams);
+$courts = $cStmt->fetchAll();
 
 $statusThai = ['Available'=>'พร้อมใช้งาน','Booked'=>'ถูกจอง','In Use'=>'กำลังใช้งาน','Maintenance'=>'ซ่อมบำรุง'];
 
@@ -214,8 +262,71 @@ function toggleCourtTypeScript() { return '
     <?php endforeach; ?>
   </div>
 
+  <!-- Search / Filter -->
+  <div class="bg-white rounded-xl border border-gray-200 p-4 mb-5">
+    <form method="get" class="flex flex-col gap-3">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1">
+          <input type="text" name="search"
+                 value="<?= htmlspecialchars($search) ?>"
+                 placeholder="🔍 ค้นหาด้วยชื่อคอร์ต / เลขคอร์ต..."
+                 class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+        </div>
+        <select name="type"
+                class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[130px]">
+          <option value="">ทุกประเภท</option>
+          <option value="normal" <?= $type_filter === 'normal' ? 'selected' : '' ?>>คอร์ตปกติ</option>
+          <option value="vip"    <?= $type_filter === 'vip'    ? 'selected' : '' ?>>ห้อง VIP</option>
+        </select>
+        <select name="cstatus"
+                class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[140px]">
+          <option value="">ทุกสถานะ</option>
+          <option value="Available"   <?= $status_filter === 'Available'   ? 'selected' : '' ?>>พร้อมใช้งาน</option>
+          <option value="In Use"      <?= $status_filter === 'In Use'      ? 'selected' : '' ?>>กำลังใช้งาน</option>
+          <option value="Booked"      <?= $status_filter === 'Booked'      ? 'selected' : '' ?>>ถูกจอง</option>
+          <option value="Maintenance" <?= $status_filter === 'Maintenance' ? 'selected' : '' ?>>ซ่อมบำรุง</option>
+        </select>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <label class="text-xs text-gray-500 whitespace-nowrap">แสดง</label>
+        <select name="per_page" onchange="this.form.submit()"
+                class="px-3 py-2 rounded-lg border border-gray-300 outline-none text-sm">
+          <option value="10"  <?= $per_page === 10  ? 'selected' : '' ?>>10 รายการ</option>
+          <option value="25"  <?= $per_page === 25  ? 'selected' : '' ?>>25 รายการ</option>
+          <option value="50"  <?= $per_page === 50  ? 'selected' : '' ?>>50 รายการ</option>
+          <option value="100" <?= $per_page === 100 ? 'selected' : '' ?>>100 รายการ</option>
+          <option value="all" <?= $per_page === 0   ? 'selected' : '' ?>>ทั้งหมด</option>
+        </select>
+        <div class="flex-1"></div>
+        <button type="submit"
+                style="background:#004A7C;"
+                class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+          ค้นหา
+        </button>
+        <?php if ($search !== '' || $type_filter !== '' || $status_filter !== ''): ?>
+        <a href="courts.php"
+           class="px-5 py-2 text-gray-600 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+          ล้างตัวกรอง
+        </a>
+        <?php endif; ?>
+      </div>
+    </form>
+  </div>
+
   <!-- Courts Table -->
   <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <!-- Count bar -->
+    <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+      <span class="text-sm text-gray-600 font-medium">
+        พบ <span style="color:#005691;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
+        <?php if ($search !== '' || $type_filter !== '' || $status_filter !== ''): ?>
+        <span class="text-gray-400 text-xs">(กรองแล้ว / ทั้งหมด <?= $totalCourts ?> คอร์ต)</span>
+        <?php endif; ?>
+      </span>
+      <?php if ($per_page > 0 && $totalPages > 1): ?>
+      <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
+      <?php endif; ?>
+    </div>
     <?php if(count($courts) > 0): ?>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -316,10 +427,19 @@ function toggleCourtTypeScript() { return '
     </div>
     <?php else: ?>
     <div class="p-12 text-center">
+      <?php if ($search !== '' || $type_filter !== '' || $status_filter !== ''): ?>
+      <p class="text-gray-400 text-lg mb-2">ไม่พบคอร์ตที่ตรงกับการค้นหา</p>
+      <a href="courts.php" class="text-sm" style="color:#005691;">ล้างตัวกรอง</a>
+      <?php else: ?>
       <p class="text-gray-400 text-lg mb-2">ยังไม่มีคอร์ต</p>
       <p class="text-gray-500 text-sm">เพิ่มคอร์ตจากฟอร์มด้านบน</p>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
+    <!-- Pagination -->
+    <div class="px-4 pb-4">
+      <?php include __DIR__ . '/../includes/pagination.php'; ?>
+    </div>
   </div>
 
 </div>

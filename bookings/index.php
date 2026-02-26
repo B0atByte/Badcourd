@@ -15,8 +15,10 @@ $where = ['1=1'];
 $params = [];
 
 if ($search) {
-    $where[] = '(b.customer_name LIKE :search OR b.customer_phone LIKE :search OR c.court_no LIKE :search)';
-    $params[':search'] = '%' . $search . '%';
+    $where[] = '(b.customer_name LIKE :search1 OR b.customer_phone LIKE :search2 OR c.court_no LIKE :search3)';
+    $params[':search1'] = '%' . $search . '%';
+    $params[':search2'] = '%' . $search . '%';
+    $params[':search3'] = '%' . $search . '%';
 }
 
 if ($status) {
@@ -211,7 +213,11 @@ $totalRevenue = $revenueStmt->fetchColumn() ?? 0;
           &nbsp;·&nbsp; <?=htmlspecialchars($r['customer_name'])?>
           &nbsp;·&nbsp; <span style="color:#004A7C;" class="font-medium">฿<?=number_format($r['total_amount'],0)?></span>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
+          <?php if (!empty($r['payment_slip_path'])): ?>
+          <button onclick="viewSlip('<?= htmlspecialchars($r['payment_slip_path'], ENT_QUOTES) ?>')"
+                  class="text-sm border border-purple-200 text-purple-600 px-3 py-1 rounded hover:bg-purple-50 transition-colors">ดูสลิป</button>
+          <?php endif; ?>
           <a href="update.php?id=<?=$r['id']?>"
              style="color:#004A7C;"
              class="text-sm border border-[#E8F1F5] px-3 py-1 rounded hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
@@ -270,7 +276,12 @@ $totalRevenue = $revenueStmt->fetchColumn() ?? 0;
             <td class="px-4 py-3 text-center text-gray-700"><?=$r['duration_hours']?></td>
             <td class="px-4 py-3 text-right text-gray-600">฿<?=number_format($r['price_per_hour'],0)?></td>
             <td class="px-4 py-3 text-right text-gray-500">
-              <?=$r['discount_amount'] > 0 ? '-฿'.number_format($r['discount_amount'],0) : '-'?>
+              <?php if ($r['discount_amount'] > 0): ?>
+                -฿<?= number_format($r['discount_amount'], 0) ?>
+                <?php if (!empty($r['promotion_discount_percent'])): ?>
+                <span class="text-xs text-purple-600 block">(โปร <?= $r['promotion_discount_percent'] ?>%)</span>
+                <?php endif; ?>
+              <?php else: ?>-<?php endif; ?>
             </td>
             <td style="color:#004A7C;" class="px-4 py-3 text-right font-semibold">฿<?=number_format($r['total_amount'],0)?></td>
             <td class="px-4 py-3 text-center">
@@ -279,7 +290,13 @@ $totalRevenue = $revenueStmt->fetchColumn() ?? 0;
               </span>
             </td>
             <td class="px-4 py-3">
-              <div class="flex gap-1.5 justify-center">
+              <div class="flex gap-1.5 justify-center flex-wrap">
+                <?php if (!empty($r['payment_slip_path'])): ?>
+                <button onclick="viewSlip('<?= htmlspecialchars($r['payment_slip_path'], ENT_QUOTES) ?>')"
+                        class="px-3 py-1 border border-purple-200 text-purple-600 rounded text-xs hover:bg-purple-50 transition-colors">
+                    ดูสลิป
+                </button>
+                <?php endif; ?>
                 <a href="update.php?id=<?=$r['id']?>"
                    style="color:#004A7C; border-color:#E8F1F5;"
                    class="px-3 py-1 border rounded text-xs hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
@@ -350,5 +367,37 @@ $totalRevenue = $revenueStmt->fetchColumn() ?? 0;
 </div>
 
 <?php include __DIR__.'/../includes/footer.php'; ?>
+
+<!-- Slip Modal -->
+<div id="slipModal"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60"
+     onclick="closeSlip()">
+  <div class="bg-white rounded-2xl p-5 max-w-sm w-full mx-4 shadow-2xl"
+       onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-4">
+      <h3 style="color:#005691;" class="font-semibold text-sm">สลิปการชำระเงิน</h3>
+      <button onclick="closeSlip()"
+              class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <img id="slipModalImg" src="" alt="slip"
+         class="w-full rounded-xl border border-gray-200 max-h-[70vh] object-contain">
+  </div>
+</div>
+
+<script>
+function viewSlip(path) {
+    document.getElementById('slipModalImg').src = '/' + path;
+    const modal = document.getElementById('slipModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+function closeSlip() {
+    const modal = document.getElementById('slipModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.getElementById('slipModalImg').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSlip(); });
+</script>
 </body>
 </html>
