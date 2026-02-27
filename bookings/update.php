@@ -21,10 +21,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hours = (int)$_POST['hours'];
     $start = new DateTime($date . ' ' . $start_time);
 
-    if (has_overlap($booking['court_id'], $start, $hours, $id)) {
+    if ($hours < 1 || $hours > 6) {
+        $error = 'จำนวนชั่วโมงต้องอยู่ระหว่าง 1–6 ชั่วโมง';
+    } elseif (has_overlap($booking['court_id'], $start, $hours, $id)) {
         $error = 'เวลานี้มีการจองอื่นอยู่แล้ว';
     } else {
-        $pph = pick_price_per_hour($start);
+        // ดึง pricing_group_id ของคอร์ตเพื่อคำนวณราคาให้ถูกต้อง
+        $cStmt = $pdo->prepare('SELECT court_type, is_vip, vip_price, normal_price, pricing_group_id FROM courts WHERE id = ?');
+        $cStmt->execute([$booking['court_id']]);
+        $cInfo = $cStmt->fetch();
+        $ctIsVip  = ($cInfo['court_type'] === 'vip' || $cInfo['is_vip'] == 1);
+        $ctGroupId = $cInfo['pricing_group_id'] ? (int)$cInfo['pricing_group_id'] : null;
+
+        if ($ctGroupId !== null) {
+            $pph = pick_price_per_hour($start, $ctGroupId);
+        } elseif ($ctIsVip && $cInfo['vip_price'] > 0) {
+            $pph = (float)$cInfo['vip_price'];
+        } elseif (!$ctIsVip && $cInfo['normal_price'] > 0) {
+            $pph = (float)$cInfo['normal_price'];
+        } else {
+            $pph = pick_price_per_hour($start);
+        }
         $total = compute_total($pph, $hours, (float)$booking['discount_amount']);
         $stmt = $pdo->prepare('UPDATE bookings SET start_datetime=?, duration_hours=?, price_per_hour=?, total_amount=?, updated_at=NOW() WHERE id=?');
         $stmt->execute([$start->format('Y-m-d H:i:s'), $hours, $pph, $total, $id]);
@@ -84,7 +101,13 @@ $court = $courtStmt->fetch();
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div>
                     <span class="text-gray-500">คอร์ต</span>
-                    <p class="font-medium text-gray-800 mt-0.5">คอร์ต <?= htmlspecialchars($court['court_no']) ?></p>
+                    <p class="font-medium text-gray-800 mt-0.5">
+                        <?php if ($court['court_type'] === 'vip' || $court['is_vip'] == 1): ?>
+                            <?= htmlspecialchars($court['vip_room_name'] ?? 'ห้อง VIP') ?>
+                        <?php else: ?>
+                            คอร์ต <?= htmlspecialchars($court['court_no']) ?>
+                        <?php endif; ?>
+                    </p>
                 </div>
                 <div>
                     <span class="text-gray-500">ผู้จอง</span>

@@ -53,7 +53,7 @@ if ($per_page > 0) {
 }
 
 // Fetch data
-$query = "SELECT b.*, c.court_no FROM bookings b JOIN courts c ON b.court_id=c.id WHERE $whereClause ORDER BY b.start_datetime DESC";
+$query = "SELECT b.*, c.court_no, c.vip_room_name, c.court_type, c.is_vip FROM bookings b JOIN courts c ON b.court_id=c.id WHERE $whereClause ORDER BY b.start_datetime DESC";
 if ($per_page > 0) {
     $query .= " LIMIT $per_page OFFSET $offset";
 }
@@ -197,11 +197,13 @@ $totalRevenue = $revenueStmt->fetchColumn() ?? 0;
       <?php foreach($rows as $r):
         $s = new DateTime($r['start_datetime']);
         $isBooked = $r['status'] === 'booked';
+        $isVipCourt = ($r['court_type'] === 'vip' || $r['is_vip'] == 1);
+        $courtLabel = $isVipCourt ? ($r['vip_room_name'] ?? 'ห้อง VIP') : 'คอร์ต ' . $r['court_no'];
       ?>
       <div class="p-4">
         <div class="flex justify-between items-start mb-2">
           <div>
-            <span style="color:#005691;" class="font-semibold">คอร์ต <?=$r['court_no']?></span>
+            <span style="color:#005691;" class="font-semibold"><?= htmlspecialchars($courtLabel) ?></span>
             <span class="text-gray-500 text-sm ml-2"><?=$s->format('d/m/Y')?></span>
           </div>
           <span class="text-xs px-2 py-1 rounded-full <?= $isBooked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' ?>">
@@ -260,16 +262,24 @@ $totalRevenue = $revenueStmt->fetchColumn() ?? 0;
           <?php foreach($rows as $r):
             $s = new DateTime($r['start_datetime']);
             $isBooked = $r['status'] === 'booked';
+            $isVipCourt = ($r['court_type'] === 'vip' || $r['is_vip'] == 1);
+            $courtLabel = $isVipCourt ? ($r['vip_room_name'] ?? 'VIP') : $r['court_no'];
           ?>
           <tr class="hover:bg-gray-50 transition-colors">
             <td class="px-4 py-3 text-gray-700"><?=$s->format('d/m/Y')?></td>
             <td class="px-4 py-3 text-gray-700">
-              <?=$s->format('H:i')?> - <?=$s->modify('+'.$r['duration_hours'].' hour')->format('H:i')?>
+              <?=$s->format('H:i')?> - <?=(clone $s)->modify('+'.$r['duration_hours'].' hour')->format('H:i')?>
             </td>
             <td class="px-4 py-3 text-center">
-              <span style="background:#004A7C;" class="inline-flex items-center justify-center w-8 h-8 text-white rounded-lg text-xs font-bold">
-                <?=$r['court_no']?>
+              <?php if ($isVipCourt): ?>
+              <span style="background:#005691;" class="inline-flex items-center justify-center px-2 h-8 text-white rounded-lg text-xs font-bold whitespace-nowrap max-w-[7rem] overflow-hidden" title="<?= htmlspecialchars($courtLabel) ?>">
+                <?= htmlspecialchars(mb_strimwidth($courtLabel, 0, 8, '…')) ?>
               </span>
+              <?php else: ?>
+              <span style="background:#004A7C;" class="inline-flex items-center justify-center w-8 h-8 text-white rounded-lg text-xs font-bold">
+                <?= htmlspecialchars($courtLabel) ?>
+              </span>
+              <?php endif; ?>
             </td>
             <td class="px-4 py-3 text-gray-800"><?=htmlspecialchars($r['customer_name'])?></td>
             <td class="px-4 py-3 text-gray-600"><?=htmlspecialchars($r['customer_phone'])?></td>

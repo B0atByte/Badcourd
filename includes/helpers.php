@@ -8,36 +8,49 @@ return $w === 0 || $w === 6;
 }
 
 
-function pick_price_per_hour(DateTime $start): float {
+function pick_price_per_hour(DateTime $start, ?int $group_id = null): float {
     global $pdo;
     $dayType = is_weekend($start) ? 'weekend' : 'weekday';
     $time = $start->format('H:i:s');
+
+    // ถ้ามี group_id ให้ค้นหากฎของ group นั้นก่อน
+    if ($group_id !== null) {
+        $stmt = $pdo->prepare("SELECT price_per_hour FROM pricing_rules
+            WHERE group_id = :gid AND day_type = :dayType AND start_time <= :t AND end_time > :t2
+            ORDER BY start_time DESC, id DESC LIMIT 1");
+        $stmt->execute([':gid' => $group_id, ':dayType' => $dayType, ':t' => $time, ':t2' => $time]);
+        $row = $stmt->fetch();
+        if ($row) return (float)$row['price_per_hour'];
+    }
+
+    // Fallback: กฎ global (group_id IS NULL)
     $stmt = $pdo->prepare("SELECT price_per_hour FROM pricing_rules
-        WHERE day_type = :dayType AND start_time <= :startTime AND end_time > :endTime
-        ORDER BY start_time DESC LIMIT 1");
-    $stmt->execute([
-        ':dayType' => $dayType,
-        ':startTime' => $time,
-        ':endTime' => $time
-    ]);
+        WHERE group_id IS NULL AND day_type = :dayType AND start_time <= :t AND end_time > :t2
+        ORDER BY start_time DESC, id DESC LIMIT 1");
+    $stmt->execute([':dayType' => $dayType, ':t' => $time, ':t2' => $time]);
     $row = $stmt->fetch();
-    return $row ? (float)$row['price_per_hour'] : 0.0; // default 0 หากนอกช่วง
+    return $row ? (float)$row['price_per_hour'] : 0.0;
 }
 
 
-function pick_pricing_rule(DateTime $start): ?array {
-    // คืนค่าแถวของกฎราคาที่จับคู่กับเวลาที่ให้มา (หรือ null ถ้าไม่พบ)
+function pick_pricing_rule(DateTime $start, ?int $group_id = null): ?array {
     global $pdo;
     $dayType = is_weekend($start) ? 'weekend' : 'weekday';
     $time = $start->format('H:i:s');
+
+    if ($group_id !== null) {
+        $stmt = $pdo->prepare("SELECT * FROM pricing_rules
+            WHERE group_id = :gid AND day_type = :dayType AND start_time <= :t AND end_time > :t2
+            ORDER BY start_time DESC, id DESC LIMIT 1");
+        $stmt->execute([':gid' => $group_id, ':dayType' => $dayType, ':t' => $time, ':t2' => $time]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) return $row;
+    }
+
     $stmt = $pdo->prepare("SELECT * FROM pricing_rules
-        WHERE day_type = :dayType AND start_time <= :startTime AND end_time > :endTime
-        ORDER BY start_time DESC LIMIT 1");
-    $stmt->execute([
-        ':dayType' => $dayType,
-        ':startTime' => $time,
-        ':endTime' => $time
-    ]);
+        WHERE group_id IS NULL AND day_type = :dayType AND start_time <= :t AND end_time > :t2
+        ORDER BY start_time DESC, id DESC LIMIT 1");
+    $stmt->execute([':dayType' => $dayType, ':t' => $time, ':t2' => $time]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;
 }

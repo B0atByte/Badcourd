@@ -48,16 +48,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $promo_code_input = strtoupper(trim($_POST['promo_code'] ?? ''));
     $posted_promotion_id = $promotion_id;
 
+    // Server-side validation
+    if ($court_id <= 0) {
+        $error = 'กรุณาเลือกคอร์ต';
+    } elseif (empty($customer_name)) {
+        $error = 'กรุณากรอกชื่อผู้จอง';
+    } elseif (empty($customer_phone)) {
+        $error = 'กรุณากรอกเบอร์โทรศัพท์';
+    } elseif ($hours < 1 || $hours > 6) {
+        $error = 'จำนวนชั่วโมงต้องอยู่ระหว่าง 1–6 ชั่วโมง';
+    }
+
     $start = new DateTime($date . ' ' . $start_time);
-    if (has_overlap($court_id, $start, $hours)) {
+    if (!$error && has_overlap($court_id, $start, $hours)) {
         $error = 'เวลานี้มีการจองอยู่แล้ว';
-    } else {
-        $courtInfo = $pdo->prepare('SELECT court_type, is_vip, vip_price, normal_price FROM courts WHERE id = ?');
+    } elseif (!$error) {
+        $courtInfo = $pdo->prepare('SELECT court_type, is_vip, vip_price, normal_price, pricing_group_id FROM courts WHERE id = ?');
         $courtInfo->execute([$court_id]);
         $court = $courtInfo->fetch();
 
-        $isVip = ($court['court_type'] === 'vip' || $court['is_vip'] == 1);
-        if ($isVip && $court['vip_price'] > 0) {
+        $isVip    = ($court['court_type'] === 'vip' || $court['is_vip'] == 1);
+        $group_id = $court['pricing_group_id'] ? (int)$court['pricing_group_id'] : null;
+
+        if ($group_id !== null) {
+            $pph = pick_price_per_hour($start, $group_id);
+        } elseif ($isVip && $court['vip_price'] > 0) {
             $pph = $court['vip_price'];
         } elseif (!$isVip && $court['normal_price'] > 0) {
             $pph = $court['normal_price'];
@@ -78,8 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($member) {
                 // Existing member
                 $member_id = $member['id'];
-            } else {
-                // Create new member
+            } elseif (!empty($_POST['register_as_member']) && $_POST['register_as_member'] === '1') {
+                // Create new member only if staff chose to register
                 $insertMember = $pdo->prepare("
                     INSERT INTO members (phone, name, email, points, total_bookings, total_spent, member_level, status)
                     VALUES (?, ?, NULL, 0, 0, 0, 'Bronze', 'active')
@@ -87,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insertMember->execute([$customer_phone, $customer_name]);
                 $member_id = $pdo->lastInsertId();
             }
+            // else: regular customer, no member record created
         }
 
         // Promotion validation (promo replaces member discount)
@@ -385,8 +401,18 @@ function getCourtDisplayName($court) {
 
                                 <!-- New Member -->
                                 <div id="memberNew" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-700">
-                                    <span>ไม่พบข้อมูลสมาชิก - จะลงทะเบียนอัตโนมัติเมื่อจองสำเร็จ</span>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span>ลูกค้าใหม่ · ยังไม่เป็นสมาชิก</span>
+                                        <button type="button" id="registerMemberBtn" onclick="toggleRegisterMember()"
+                                                class="px-2.5 py-1 rounded-md text-xs font-medium border border-yellow-500 text-yellow-700 hover:bg-yellow-100 transition-colors whitespace-nowrap">
+                                            + สมัครสมาชิก
+                                        </button>
+                                    </div>
+                                    <div id="registerMemberConfirm" class="hidden mt-2 text-green-700 font-medium">
+                                        ✓ จะสมัครสมาชิกใหม่พร้อมการจองนี้
+                                    </div>
                                 </div>
+                                <input type="hidden" name="register_as_member" id="registerAsMemberInput" value="0">
                             </div>
                         </div>
 
@@ -748,6 +774,46 @@ function getCourtDisplayName($court) {
     let memberCheckTimeout = null;
     let currentMemberData = null;
 
+    function toggleRegisterMember() {
+        const btn = document.getElementById('registerMemberBtn');
+        const confirm = document.getElementById('registerMemberConfirm');
+        const input = document.getElementById('registerAsMemberInput');
+        const isRegistering = input.value === '1';
+
+        if (isRegistering) {
+            // Cancel registration
+            input.value = '0';
+            btn.textContent = '+ สมัครสมาชิก';
+            btn.classList.remove('bg-yellow-500', 'text-white', 'border-yellow-500');
+            btn.classList.add('border-yellow-500', 'text-yellow-700');
+            confirm.classList.add('hidden');
+            // Remove member discount
+            currentMemberData = null;
+            document.getElementById('discountInput').value = 0;
+            updatePriceDisplay();
+        } else {
+            // Confirm registration
+            input.value = '1';
+            btn.textContent = '✕ ยกเลิก';
+            btn.classList.add('bg-yellow-500', 'text-white');
+            btn.classList.remove('text-yellow-700');
+            confirm.classList.remove('hidden');
+        }
+    }
+
+    function resetRegisterMember() {
+        const input = document.getElementById('registerAsMemberInput');
+        const btn = document.getElementById('registerMemberBtn');
+        const confirm = document.getElementById('registerMemberConfirm');
+        if (input) input.value = '0';
+        if (btn) {
+            btn.textContent = '+ สมัครสมาชิก';
+            btn.classList.remove('bg-yellow-500', 'text-white');
+            btn.classList.add('text-yellow-700');
+        }
+        if (confirm) confirm.classList.add('hidden');
+    }
+
     function renderNameChips(names) {
         const wrap = document.getElementById('nameChipsWrap');
         const container = document.getElementById('nameChips');
@@ -807,6 +873,7 @@ function getCourtDisplayName($court) {
         memberNew.classList.add('hidden');
         currentMemberData = null;
         clearNameChips();
+        resetRegisterMember();
 
         // Check if phone is 10 digits
         if (phone.length === 10) {

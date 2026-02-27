@@ -13,27 +13,38 @@ if (!$checkNormalPrice) {
     try { $pdo->exec("ALTER TABLE courts ADD COLUMN normal_price DECIMAL(10,2) NULL AFTER vip_price"); } catch (Exception $e) {}
 }
 
+$checkPricingGroupId = $pdo->query("SHOW COLUMNS FROM courts LIKE 'pricing_group_id'")->fetch();
+if (!$checkPricingGroupId) {
+    try { $pdo->exec("ALTER TABLE courts ADD COLUMN pricing_group_id INT NULL"); } catch (Exception $e) {}
+}
+
+// โหลดกลุ่มราคาทั้งหมด
+$pricingGroups = $pdo->query("SELECT id, name FROM pricing_groups ORDER BY name ASC")->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
-    $type = $_POST['court_type'] ?? 'normal';
+    $type  = $_POST['court_type'] ?? 'normal';
     $isVip = $type === 'vip' ? 1 : 0;
+    $pgid  = !empty($_POST['pricing_group_id']) ? (int)$_POST['pricing_group_id'] : null;
 
     if ($type === 'vip') {
         $roomName = trim($_POST['vip_room_name'] ?? '');
-        $vipPrice = floatval($_POST['vip_price'] ?? 0);
+        $vipPrice = $pgid ? null : floatval($_POST['vip_price'] ?? 0);
         $stmt = $pdo->query('SELECT MIN(court_no) as min_no FROM courts WHERE court_type = "vip"');
         $result = $stmt->fetch();
         $courtNo = ($result['min_no'] !== null && $result['min_no'] < 0) ? $result['min_no'] - 1 : -1;
 
-        if (empty($roomName) || $vipPrice <= 0) {
-            $error = "กรุณากรอกชื่อห้อง VIP และราคาให้ครบถ้วน";
+        if (empty($roomName)) {
+            $error = "กรุณากรอกชื่อห้อง VIP";
+        } elseif (!$pgid && $vipPrice <= 0) {
+            $error = "กรุณาระบุราคาคงที่ หรือเลือกกลุ่มกฎราคา";
         } else {
-            $stmt = $pdo->prepare('INSERT INTO courts (court_no, vip_room_name, status, is_vip, court_type, vip_price) VALUES (:n, :room_name, "Available", :is_vip, :type, :price)');
-            $stmt->execute([':n'=>$courtNo,':room_name'=>$roomName,':is_vip'=>$isVip,':type'=>$type,':price'=>$vipPrice]);
+            $stmt = $pdo->prepare('INSERT INTO courts (court_no, vip_room_name, status, is_vip, court_type, vip_price, pricing_group_id) VALUES (:n, :room_name, "Available", :is_vip, :type, :price, :pgid)');
+            $stmt->execute([':n'=>$courtNo,':room_name'=>$roomName,':is_vip'=>$isVip,':type'=>$type,':price'=>$vipPrice,':pgid'=>$pgid]);
             header('Location: courts.php?success=1'); exit;
         }
     } else {
-        $no = (int)($_POST['court_no'] ?? 0);
-        $normalPrice = !empty($_POST['normal_price']) ? floatval($_POST['normal_price']) : null;
+        $no          = (int)($_POST['court_no'] ?? 0);
+        $normalPrice = $pgid ? null : (!empty($_POST['normal_price']) ? floatval($_POST['normal_price']) : null);
         if ($no <= 0) {
             $error = "กรุณากรอกหมายเลขคอร์ตที่ถูกต้อง";
         } else {
@@ -42,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
             if ($checkStmt->fetchColumn() > 0) {
                 $error = "หมายเลขคอร์ต {$no} มีอยู่แล้ว";
             } else {
-                $stmt = $pdo->prepare('INSERT INTO courts (court_no, vip_room_name, status, is_vip, court_type, vip_price, normal_price) VALUES (:n, NULL, "Available", :is_vip, :type, NULL, :normal_price)');
-                $stmt->execute([':n'=>$no,':is_vip'=>$isVip,':type'=>$type,':normal_price'=>$normalPrice]);
+                $stmt = $pdo->prepare('INSERT INTO courts (court_no, vip_room_name, status, is_vip, court_type, vip_price, normal_price, pricing_group_id) VALUES (:n, NULL, "Available", :is_vip, :type, NULL, :normal_price, :pgid)');
+                $stmt->execute([':n'=>$no,':is_vip'=>$isVip,':type'=>$type,':normal_price'=>$normalPrice,':pgid'=>$pgid]);
                 header('Location: courts.php?success=1'); exit;
             }
         }
@@ -51,15 +62,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
-    $id = (int)$_POST['id'];
-    $st = $_POST['status'];
-    $type = $_POST['court_type'] ?? 'normal';
+    $id    = (int)$_POST['id'];
+    $st    = $_POST['status'];
+    $type  = $_POST['court_type'] ?? 'normal';
     $isVip = $type === 'vip' ? 1 : 0;
+    $pgid  = !empty($_POST['pricing_group_id']) ? (int)$_POST['pricing_group_id'] : null;
 
     if ($type === 'vip') {
         $roomName = trim($_POST['vip_room_name'] ?? '');
-        $vipPrice = floatval($_POST['vip_price'] ?? 0);
-        $oldData = $pdo->prepare('SELECT court_no, court_type FROM courts WHERE id = :id');
+        $vipPrice = $pgid ? null : floatval($_POST['vip_price'] ?? 0);
+        $oldData  = $pdo->prepare('SELECT court_no, court_type FROM courts WHERE id = :id');
         $oldData->execute([':id'=>$id]);
         $old = $oldData->fetch();
         if ($old['court_type'] === 'vip' && $old['court_no'] < 0) {
@@ -69,13 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
             $result = $stmt->fetch();
             $courtNo = ($result['min_no'] !== null && $result['min_no'] < 0) ? $result['min_no'] - 1 : -1;
         }
-        $stmt = $pdo->prepare('UPDATE courts SET court_no=:n, vip_room_name=:room_name, status=:s, is_vip=:is_vip, court_type=:type, vip_price=:price WHERE id=:id');
-        $stmt->execute([':n'=>$courtNo,':room_name'=>$roomName,':s'=>$st,':is_vip'=>$isVip,':type'=>$type,':price'=>$vipPrice,':id'=>$id]);
+        $stmt = $pdo->prepare('UPDATE courts SET court_no=:n, vip_room_name=:room_name, status=:s, is_vip=:is_vip, court_type=:type, vip_price=:price, pricing_group_id=:pgid WHERE id=:id');
+        $stmt->execute([':n'=>$courtNo,':room_name'=>$roomName,':s'=>$st,':is_vip'=>$isVip,':type'=>$type,':price'=>$vipPrice,':pgid'=>$pgid,':id'=>$id]);
     } else {
-        $no = (int)$_POST['court_no'];
-        $normalPrice = !empty($_POST['normal_price']) ? floatval($_POST['normal_price']) : null;
-        $stmt = $pdo->prepare('UPDATE courts SET court_no=:n, vip_room_name=NULL, status=:s, is_vip=:is_vip, court_type=:type, vip_price=NULL, normal_price=:normal_price WHERE id=:id');
-        $stmt->execute([':n'=>$no,':s'=>$st,':is_vip'=>$isVip,':type'=>$type,':normal_price'=>$normalPrice,':id'=>$id]);
+        $no          = (int)$_POST['court_no'];
+        $normalPrice = $pgid ? null : (!empty($_POST['normal_price']) ? floatval($_POST['normal_price']) : null);
+        $stmt = $pdo->prepare('UPDATE courts SET court_no=:n, vip_room_name=NULL, status=:s, is_vip=:is_vip, court_type=:type, vip_price=NULL, normal_price=:normal_price, pricing_group_id=:pgid WHERE id=:id');
+        $stmt->execute([':n'=>$no,':s'=>$st,':is_vip'=>$isVip,':type'=>$type,':normal_price'=>$normalPrice,':pgid'=>$pgid,':id'=>$id]);
     }
     header('Location: courts.php?updated=1'); exit;
 }
@@ -146,18 +158,49 @@ $courts = $cStmt->fetchAll();
 $statusThai = ['Available'=>'พร้อมใช้งาน','Booked'=>'ถูกจอง','In Use'=>'กำลังใช้งาน','Maintenance'=>'ซ่อมบำรุง'];
 
 function toggleCourtTypeScript() { return '
+  // disable/enable inputs ใน section ที่ซ่อน/แสดง
+  function setSectionDisabled(section, disabled) {
+    if (!section) return;
+    section.querySelectorAll("input, select").forEach(function(el) {
+      el.disabled = disabled;
+    });
+  }
+
   function toggleCourtType(selectElement) {
     const form = selectElement.closest("form");
     const normalFields = form.querySelector(".normal-fields");
     const vipFields = form.querySelector(".vip-fields");
     if (selectElement.value === "vip") {
-      if (normalFields) { normalFields.classList.add("hidden"); const i = normalFields.querySelector("input[name=court_no]"); if(i) i.removeAttribute("required"); }
-      if (vipFields) { vipFields.classList.remove("hidden"); const r = vipFields.querySelector("input[name=vip_room_name]"); const p = vipFields.querySelector("input[name=vip_price]"); if(r) r.setAttribute("required","required"); if(p) p.setAttribute("required","required"); }
+      if (normalFields) { normalFields.classList.add("hidden"); setSectionDisabled(normalFields, true); }
+      if (vipFields)    { vipFields.classList.remove("hidden"); setSectionDisabled(vipFields, false); const r = vipFields.querySelector("input[name=vip_room_name]"); if(r) r.setAttribute("required","required"); }
     } else {
-      if (normalFields) { normalFields.classList.remove("hidden"); const i = normalFields.querySelector("input[name=court_no]"); if(i) i.setAttribute("required","required"); }
-      if (vipFields) { vipFields.classList.add("hidden"); const r = vipFields.querySelector("input[name=vip_room_name]"); const p = vipFields.querySelector("input[name=vip_price]"); if(r) r.removeAttribute("required"); if(p) p.removeAttribute("required"); }
+      if (vipFields)    { vipFields.classList.add("hidden"); setSectionDisabled(vipFields, true); const r = vipFields.querySelector("input[name=vip_room_name]"); if(r) r.removeAttribute("required"); }
+      if (normalFields) { normalFields.classList.remove("hidden"); setSectionDisabled(normalFields, false); const i = normalFields.querySelector("input[name=court_no]"); if(i) i.setAttribute("required","required"); }
     }
   }
+
+  // เพิ่มคอร์ตใหม่: toggle ช่องราคาคงที่เมื่อเลือก group
+  function toggleAddPriceField(select) {
+    const form = select.closest("form");
+    form.querySelectorAll(".add-fixed-price-wrap").forEach(function(w) {
+      w.style.display = select.value ? "none" : "";
+    });
+  }
+
+  // inline edit row: toggle ช่องราคาคงที่เมื่อเลือก group
+  function toggleRowPriceField(select) {
+    const form = select.closest("form");
+    form.querySelectorAll(".row-fixed-price").forEach(function(inp) {
+      inp.style.display = select.value ? "none" : "";
+    });
+  }
+
+  // initialize: disable inputs ใน hidden sections ตอนโหลดหน้า
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".normal-fields.hidden, .vip-fields.hidden").forEach(function(section) {
+      setSectionDisabled(section, true);
+    });
+  });
 '; }
 ?>
 <!doctype html>
@@ -214,8 +257,17 @@ function toggleCourtTypeScript() { return '
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">ราคา ฿/ชม. (ไม่บังคับ)</label>
-            <input type="number" step="0.01" min="0" name="normal_price" placeholder="ถ้าไม่ระบุ = ตามช่วงเวลา"
+            <label class="block text-xs font-medium text-gray-600 mb-1">กำหนดราคา</label>
+            <select name="pricing_group_id" onchange="toggleAddPriceField(this)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+              <option value="">— ราคาคงที่ —</option>
+              <?php foreach ($pricingGroups as $pg): ?>
+              <option value="<?= $pg['id'] ?>"><?= htmlspecialchars($pg['name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="add-fixed-price-wrap">
+            <input type="number" step="0.01" min="0" name="normal_price" placeholder="ราคาคงที่ ฿/ชม. (ว่าง = ตามกฎ global)"
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
           </div>
         </div>
@@ -227,8 +279,17 @@ function toggleCourtTypeScript() { return '
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">ราคา VIP ฿/ชม.</label>
-            <input type="number" step="0.01" min="0.01" name="vip_price" placeholder="เช่น 500, 800..."
+            <label class="block text-xs font-medium text-gray-600 mb-1">กำหนดราคา VIP</label>
+            <select name="pricing_group_id" onchange="toggleAddPriceField(this)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+              <option value="">— ราคาคงที่ —</option>
+              <?php foreach ($pricingGroups as $pg): ?>
+              <option value="<?= $pg['id'] ?>"><?= htmlspecialchars($pg['name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="add-fixed-price-wrap">
+            <input type="number" step="0.01" min="0.01" name="vip_price" placeholder="ราคาคงที่ ฿/ชม."
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
           </div>
         </div>
@@ -370,12 +431,22 @@ function toggleCourtTypeScript() { return '
               <span class="text-xs"><?= $isVip ? 'VIP' : 'ปกติ' ?></span>
             </td>
             <td class="px-4 py-3 text-center">
-              <?php if($isVip && $c['vip_price']): ?>
+              <?php
+                $pgName = null;
+                if ($c['pricing_group_id']) {
+                    foreach ($pricingGroups as $pg) {
+                        if ($pg['id'] == $c['pricing_group_id']) { $pgName = $pg['name']; break; }
+                    }
+                }
+              ?>
+              <?php if($pgName): ?>
+              <span class="text-xs px-2 py-0.5 rounded" style="background:#E8F1F5;color:#004A7C;">กฎ: <?= htmlspecialchars($pgName) ?></span>
+              <?php elseif($isVip && $c['vip_price']): ?>
               <span style="color:#004A7C;" class="font-medium"><?= number_format($c['vip_price'], 0) ?> ฿/ชม.</span>
               <?php elseif(!$isVip && $c['normal_price']): ?>
-              <span style="color:#E8F1F5;" class="font-medium"><?= number_format($c['normal_price'], 0) ?> ฿/ชม.</span>
+              <span class="font-medium text-gray-700"><?= number_format($c['normal_price'], 0) ?> ฿/ชม.</span>
               <?php else: ?>
-              <span class="text-gray-400 text-xs">ตามเวลา</span>
+              <span class="text-gray-400 text-xs">ตามกฎ global</span>
               <?php endif; ?>
             </td>
             <td class="px-4 py-3 text-center">
@@ -391,17 +462,39 @@ function toggleCourtTypeScript() { return '
                   <option value="normal" <?= !$isVip ? 'selected' : '' ?>>ปกติ</option>
                   <option value="vip" <?= $isVip ? 'selected' : '' ?>>VIP</option>
                 </select>
-                <div class="normal-fields <?= $isVip ? 'hidden' : '' ?> flex gap-1">
+                <div class="normal-fields <?= $isVip ? 'hidden' : '' ?> flex gap-1 flex-wrap">
                   <input type="number" name="court_no" value="<?= $c['court_no'] ?>"
                          class="w-14 px-2 py-1.5 border border-gray-300 rounded text-center text-xs outline-none">
-                  <input type="number" step="0.01" name="normal_price" value="<?= $c['normal_price'] ?? '' ?>" placeholder="ราคา"
-                         class="w-20 px-2 py-1.5 border border-gray-300 rounded text-center text-xs outline-none">
+                  <select name="pricing_group_id" onchange="toggleRowPriceField(this)"
+                          class="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none">
+                    <option value="">ราคาคงที่</option>
+                    <?php foreach ($pricingGroups as $pg): ?>
+                    <option value="<?= $pg['id'] ?>" <?= $c['pricing_group_id'] == $pg['id'] ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($pg['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <input type="number" step="0.01" name="normal_price"
+                         value="<?= $c['normal_price'] ?? '' ?>" placeholder="฿/ชม."
+                         <?= $c['pricing_group_id'] ? 'style="display:none"' : '' ?>
+                         class="row-fixed-price w-20 px-2 py-1.5 border border-gray-300 rounded text-center text-xs outline-none">
                 </div>
-                <div class="vip-fields <?= $isVip ? '' : 'hidden' ?> flex gap-1">
+                <div class="vip-fields <?= $isVip ? '' : 'hidden' ?> flex gap-1 flex-wrap">
                   <input type="text" name="vip_room_name" value="<?= htmlspecialchars($c['vip_room_name'] ?? '') ?>" placeholder="ชื่อห้อง"
                          class="w-24 px-2 py-1.5 border border-gray-300 rounded text-xs outline-none">
-                  <input type="number" step="0.01" name="vip_price" value="<?= $c['vip_price'] ?? '' ?>" placeholder="ราคา"
-                         class="w-16 px-2 py-1.5 border border-gray-300 rounded text-center text-xs outline-none">
+                  <select name="pricing_group_id" onchange="toggleRowPriceField(this)"
+                          class="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none">
+                    <option value="">ราคาคงที่</option>
+                    <?php foreach ($pricingGroups as $pg): ?>
+                    <option value="<?= $pg['id'] ?>" <?= $c['pricing_group_id'] == $pg['id'] ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($pg['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <input type="number" step="0.01" name="vip_price"
+                         value="<?= $c['vip_price'] ?? '' ?>" placeholder="฿/ชม."
+                         <?= $c['pricing_group_id'] ? 'style="display:none"' : '' ?>
+                         class="row-fixed-price w-16 px-2 py-1.5 border border-gray-300 rounded text-center text-xs outline-none">
                 </div>
                 <select name="status" class="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none">
                   <?php foreach(['Available','Booked','In Use','Maintenance'] as $s): ?>
