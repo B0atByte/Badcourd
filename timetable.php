@@ -280,7 +280,7 @@ function getCourtDisplayName($court) {
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-400 text-xs mb-1">ว่าง</p>
-      <p style="color:#E8F1F5;" class="text-2xl font-bold"><?= $freeSlots ?></p>
+      <p style="color:#10b981;" class="text-2xl font-bold"><?= $freeSlots ?></p>
       <p class="text-gray-400 text-xs"><?= round($freeSlots/2, 1) ?> ชั่วโมง</p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
