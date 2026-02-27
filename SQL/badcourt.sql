@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql
--- Generation Time: Feb 26, 2026 at 08:43 AM
+-- Generation Time: Feb 27, 2026 at 09:02 AM
 -- Server version: 8.0.44
 -- PHP Version: 8.3.26
 
@@ -107,26 +107,27 @@ CREATE TABLE `courts` (
   `is_vip` tinyint(1) NOT NULL DEFAULT '0',
   `court_type` enum('normal','vip') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'normal' COMMENT 'ประเภทคอร์ต: normal=ปกติ, vip=VIP',
   `vip_price` decimal(10,2) DEFAULT NULL COMMENT 'ราคาพิเศษสำหรับคอร์ต VIP (บาท/ชั่วโมง)',
-  `normal_price` decimal(10,2) DEFAULT NULL COMMENT 'ราคาคงที่สำหรับคอร์ตปกติ (optional)'
+  `normal_price` decimal(10,2) DEFAULT NULL COMMENT 'ราคาคงที่สำหรับคอร์ตปกติ (optional)',
+  `pricing_group_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `courts`
 --
 
-INSERT INTO `courts` (`id`, `court_no`, `vip_room_name`, `status`, `is_vip`, `court_type`, `vip_price`, `normal_price`) VALUES
-(11, -3, 'ห้อง VIP 1', 'Available', 1, 'vip', 100.00, NULL),
-(18, -4, 'ห้อง VIP 2', 'Available', 1, 'vip', 100.00, NULL),
-(19, 2, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(20, 3, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(21, 4, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(22, 5, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(23, 6, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(24, 7, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(25, 8, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(26, 9, NULL, 'Available', 0, 'normal', NULL, 100.00),
-(27, -5, 'ห้อง VIP 3', 'Available', 1, 'vip', 150.00, NULL),
-(28, 1, NULL, 'Available', 0, 'normal', NULL, 100.00);
+INSERT INTO `courts` (`id`, `court_no`, `vip_room_name`, `status`, `is_vip`, `court_type`, `vip_price`, `normal_price`, `pricing_group_id`) VALUES
+(11, -3, 'ห้อง VIP 1', 'Available', 1, 'vip', 100.00, NULL, NULL),
+(18, -4, 'ห้อง VIP 2', 'Available', 1, 'vip', 100.00, NULL, NULL),
+(19, 2, NULL, 'Available', 0, 'normal', NULL, NULL, 1),
+(20, 3, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(21, 4, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(22, 5, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(23, 6, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(24, 7, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(25, 8, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(26, 9, NULL, 'Available', 0, 'normal', NULL, 100.00, NULL),
+(27, -5, 'ห้อง VIP 3', 'Available', 1, 'vip', NULL, NULL, 1),
+(28, 1, NULL, 'Available', 0, 'normal', NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -194,11 +195,32 @@ INSERT INTO `point_transactions` (`id`, `member_id`, `booking_id`, `points`, `ty
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pricing_groups`
+--
+
+CREATE TABLE `pricing_groups` (
+  `id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `pricing_groups`
+--
+
+INSERT INTO `pricing_groups` (`id`, `name`, `created_at`) VALUES
+(1, 'กลุ่มราคาช่วงเช้า', '2026-02-27 07:00:51'),
+(3, 'กลุ่มราคาช่วงกลาง', '2026-02-27 07:02:58');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `pricing_rules`
 --
 
 CREATE TABLE `pricing_rules` (
   `id` int NOT NULL,
+  `group_id` int DEFAULT NULL,
   `day_type` enum('weekday','weekend') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
@@ -209,9 +231,15 @@ CREATE TABLE `pricing_rules` (
 -- Dumping data for table `pricing_rules`
 --
 
-INSERT INTO `pricing_rules` (`id`, `day_type`, `start_time`, `end_time`, `price_per_hour`) VALUES
-(10, 'weekend', '08:00:00', '12:00:00', 200.00),
-(13, 'weekday', '16:00:00', '21:00:00', 250.00);
+INSERT INTO `pricing_rules` (`id`, `group_id`, `day_type`, `start_time`, `end_time`, `price_per_hour`) VALUES
+(21, 1, 'weekday', '09:00:00', '10:00:00', 200.00),
+(22, 1, 'weekday', '10:00:00', '12:00:00', 250.00),
+(23, 3, 'weekday', '08:00:00', '12:00:00', 400.00),
+(24, 1, 'weekend', '08:00:00', '12:00:00', 400.00),
+(26, 3, 'weekend', '08:00:00', '12:00:00', 400.00),
+(28, NULL, 'weekend', '08:00:00', '12:00:00', 150.00),
+(29, NULL, 'weekday', '08:00:00', '12:00:00', 150.00),
+(30, NULL, 'weekday', '08:00:00', '12:00:00', 400.00);
 
 -- --------------------------------------------------------
 
@@ -292,7 +320,8 @@ ALTER TABLE `booking_logs`
 --
 ALTER TABLE `courts`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_court_type` (`court_type`);
+  ADD KEY `idx_court_type` (`court_type`),
+  ADD KEY `fk_court_pg` (`pricing_group_id`);
 
 --
 -- Indexes for table `members`
@@ -313,10 +342,17 @@ ALTER TABLE `point_transactions`
   ADD KEY `idx_type` (`type`);
 
 --
+-- Indexes for table `pricing_groups`
+--
+ALTER TABLE `pricing_groups`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `pricing_rules`
 --
 ALTER TABLE `pricing_rules`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_pr_group` (`group_id`);
 
 --
 -- Indexes for table `promotions`
@@ -371,10 +407,16 @@ ALTER TABLE `point_transactions`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
+-- AUTO_INCREMENT for table `pricing_groups`
+--
+ALTER TABLE `pricing_groups`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `pricing_rules`
 --
 ALTER TABLE `pricing_rules`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `promotions`
@@ -409,11 +451,23 @@ ALTER TABLE `booking_logs`
   ADD CONSTRAINT `booking_logs_ibfk_2` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`);
 
 --
+-- Constraints for table `courts`
+--
+ALTER TABLE `courts`
+  ADD CONSTRAINT `fk_court_pg` FOREIGN KEY (`pricing_group_id`) REFERENCES `pricing_groups` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `point_transactions`
 --
 ALTER TABLE `point_transactions`
   ADD CONSTRAINT `point_transactions_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `point_transactions_ibfk_2` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `pricing_rules`
+--
+ALTER TABLE `pricing_rules`
+  ADD CONSTRAINT `fk_pr_group` FOREIGN KEY (`group_id`) REFERENCES `pricing_groups` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `promotions`

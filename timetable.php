@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+if (session_status() === PHP_SESSION_NONE) session_start();
+$isLoggedIn = isset($_SESSION['user']);
 
 $date = $_GET['date'] ?? date('Y-m-d');
 
@@ -109,11 +111,21 @@ function getCourtDisplayName($court) {
         <img src="/logo/BPL.png" alt="BPL" class="w-8 h-8 object-contain rounded">
         <span class="text-white font-semibold text-base">BARGAIN SPORT</span>
       </a>
+      <?php if ($isLoggedIn): ?>
+      <div class="flex items-center gap-2">
+        <span class="text-blue-200 text-sm hidden sm:inline"><?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+        <a href="/bookings/create.php"
+           class="px-4 py-1.5 text-sm text-white border border-white/30 rounded hover:bg-white/10 transition-colors">
+          กลับ
+        </a>
+      </div>
+      <?php else: ?>
       <a href="/auth/login.php"
          style="background:#FF0000;"
          class="px-4 py-1.5 text-sm text-white rounded hover:opacity-90 transition-opacity">
         เข้าสู่ระบบ
       </a>
+      <?php endif; ?>
     </div>
   </div>
 </nav>
@@ -280,6 +292,7 @@ function getCourtDisplayName($court) {
     </div>
   </div>
 
+  <?php if (!$isLoggedIn): ?>
   <!-- Login CTA -->
   <div class="mt-6 bg-white rounded-xl border border-gray-200 p-6 text-center">
     <h3 style="color:#005691;" class="text-lg font-semibold mb-2">ต้องการดูรายละเอียดเพิ่มเติมหรือจองคอร์ต?</h3>
@@ -290,6 +303,7 @@ function getCourtDisplayName($court) {
       เข้าสู่ระบบ
     </a>
   </div>
+  <?php endif; ?>
 
 </div>
 
