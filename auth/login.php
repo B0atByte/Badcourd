@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'name'     => $user['username'],
             'role'     => $user['role'],
         ];
-        header('Location: /timetable.php');
+        header('Location: /timetable_detail.php');
         exit;
     } else {
         $error = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
