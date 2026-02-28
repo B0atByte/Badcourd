@@ -866,8 +866,12 @@ document.querySelectorAll('.tl-booked').forEach(function(cell) {
   function getStatus(startTs, endTs) {
     const now = Date.now();
     const sMs = startTs * 1000, eMs = endTs * 1000;
-    if (now >= sMs && now < eMs)
-      return { text: 'กำลังเล่นอยู่', bg: '#d1fae5', color: '#065f46' };
+    if (now >= sMs && now < eMs) {
+      const minsLeft = Math.round((eMs - now) / 60000);
+      const h = Math.floor(minsLeft / 60), m = minsLeft % 60;
+      const txt = h > 0 ? `เหลือ ${h} ชม.${m ? ' ' + m + ' นาที' : ''}` : `เหลือ ${minsLeft} นาที`;
+      return { text: txt, bg: '#d1fae5', color: '#065f46' };
+    }
     if (now < sMs) {
       const mins = Math.round((sMs - now) / 60000);
       const h = Math.floor(mins / 60), m = mins % 60;
