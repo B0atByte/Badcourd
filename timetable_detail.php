@@ -155,6 +155,16 @@ foreach ($bookings as $b) {
       white-space: nowrap;
     }
 
+    /* Quick-info tooltip (hover on timeline slots) */
+    #bkTooltip {
+      position: fixed; z-index: 200; pointer-events: none;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.14);
+      padding: 12px 14px; min-width: 210px; max-width: 270px;
+      opacity: 0; transition: opacity .1s ease;
+    }
+    #bkTooltip.tt-show { opacity: 1; }
+
     /* Modal */
     #bookingModal { backdrop-filter: blur(4px); }
     .slip-upload-area {
@@ -330,6 +340,14 @@ foreach ($bookings as $b) {
             ?>
             <td class="tl-booked <?= $bookedCls ?>"
                 colspan="<?= $colspan ?>"
+                data-bk-name="<?= htmlspecialchars($bk['customer_name'], ENT_QUOTES) ?>"
+                data-bk-court="<?= htmlspecialchars($courtName, ENT_QUOTES) ?>"
+                data-bk-badge="<?= $isVip ? 'V' : $c['court_no'] ?>"
+                data-bk-start="<?= $startDt->format('H:i') ?>"
+                data-bk-end="<?= $endDt->format('H:i') ?>"
+                data-bk-start-ts="<?= $startDt->getTimestamp() ?>"
+                data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
+                data-bk-vip="<?= $isVip ? '1' : '0' ?>"
                 onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, <?= $isVip ? 'true' : 'false' ?>)"
                 title="<?= htmlspecialchars($bk['customer_name']) ?> <?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?>">
               <div class="tl-booked-inner">
@@ -394,8 +412,10 @@ foreach ($bookings as $b) {
               $bkJson  = htmlspecialchars(json_encode($bk, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
               $cnJson  = htmlspecialchars(json_encode($courtName, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
             ?>
-            <div class="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity"
+            <div class="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity bk-card-item"
                  style="background:#EDF4FA;"
+                 data-bk-start-ts="<?= $startDt->getTimestamp() ?>"
+                 data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
                  onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, true)">
               <div class="flex items-center justify-between mb-0.5">
                 <span class="text-xs font-bold" style="color:#004A7C;"><?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?></span>
@@ -439,8 +459,10 @@ foreach ($bookings as $b) {
               $bkJson  = htmlspecialchars(json_encode($bk, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
               $cnJson  = htmlspecialchars(json_encode($courtName, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
             ?>
-            <div class="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity"
+            <div class="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity bk-card-item"
                  style="background:#EDF4FA;"
+                 data-bk-start-ts="<?= $startDt->getTimestamp() ?>"
+                 data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
                  onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, false)">
               <div class="flex items-center justify-between mb-0.5">
                 <span class="text-xs font-bold" style="color:#005691;"><?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?></span>
@@ -583,6 +605,19 @@ foreach ($bookings as $b) {
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
+
+<!-- Quick-info tooltip -->
+<div id="bkTooltip">
+  <div class="flex items-center gap-2 mb-2">
+    <div id="ttBadge" class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"></div>
+    <div class="min-w-0">
+      <p id="ttCourt" class="text-xs font-semibold text-gray-700 truncate"></p>
+      <p id="ttTime" class="text-xs text-gray-400"></p>
+    </div>
+  </div>
+  <p id="ttName" class="text-sm font-bold text-gray-900 mb-2 truncate"></p>
+  <span id="ttStatus" class="inline-block text-xs px-2.5 py-1 rounded-full font-medium"></span>
+</div>
 
 <script>
 // ===================== Constants =====================
@@ -816,6 +851,62 @@ document.querySelectorAll('.tl-booked').forEach(function(cell) {
   const match = onclickAttr.match(/"id"\s*:\s*"?(\d+)"?/);
   if (match) cell.dataset.bkId = match[1];
 });
+
+// ===================== Quick-info tooltip =====================
+(function () {
+  const tooltip = document.getElementById('bkTooltip');
+
+  function getStatus(startTs, endTs) {
+    const now = Date.now();
+    const sMs = startTs * 1000, eMs = endTs * 1000;
+    if (now >= sMs && now < eMs)
+      return { text: 'กำลังเล่นอยู่', bg: '#d1fae5', color: '#065f46' };
+    if (now < sMs) {
+      const mins = Math.round((sMs - now) / 60000);
+      const h = Math.floor(mins / 60), m = mins % 60;
+      const txt = h > 0 ? `อีก ${h} ชม.${m ? ' ' + m + ' นาที' : ''}` : `อีก ${mins} นาที`;
+      return { text: txt, bg: '#dbeafe', color: '#1e40af' };
+    }
+    return { text: 'เสร็จแล้ว', bg: '#f3f4f6', color: '#6b7280' };
+  }
+
+  // Hover tooltip for timeline slots
+  document.querySelectorAll('.tl-booked[data-bk-name]').forEach(cell => {
+    cell.addEventListener('mousemove', function (e) {
+      const { bkName, bkCourt, bkBadge, bkStart, bkEnd, bkStartTs, bkEndTs, bkVip } = this.dataset;
+      const st = getStatus(parseInt(bkStartTs), parseInt(bkEndTs));
+
+      document.getElementById('ttBadge').textContent     = bkBadge || (bkVip === '1' ? 'V' : '#');
+      document.getElementById('ttBadge').style.background = bkVip === '1' ? '#004A7C' : '#005691';
+      document.getElementById('ttCourt').textContent     = bkCourt;
+      document.getElementById('ttTime').textContent      = bkStart + ' – ' + bkEnd;
+      document.getElementById('ttName').textContent      = bkName;
+      const statusEl = document.getElementById('ttStatus');
+      statusEl.textContent     = st.text;
+      statusEl.style.background = st.bg;
+      statusEl.style.color      = st.color;
+
+      let tx = e.clientX + 14, ty = e.clientY - 70;
+      if (tx + 280 > window.innerWidth) tx = e.clientX - 280;
+      if (ty < 8) ty = e.clientY + 14;
+      tooltip.style.left = tx + 'px';
+      tooltip.style.top  = ty + 'px';
+      tooltip.classList.add('tt-show');
+    });
+    cell.addEventListener('mouseleave', () => tooltip.classList.remove('tt-show'));
+  });
+
+  // Status badge on card view items
+  document.querySelectorAll('.bk-card-item[data-bk-start-ts]').forEach(item => {
+    const st = getStatus(parseInt(item.dataset.bkStartTs), parseInt(item.dataset.bkEndTs));
+    const badge = document.createElement('span');
+    badge.className = 'inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1.5';
+    badge.style.background = st.bg;
+    badge.style.color = st.color;
+    badge.textContent = st.text;
+    item.appendChild(badge);
+  });
+})();
 
 // ===================== View Toggle =====================
 function setView(v) {
