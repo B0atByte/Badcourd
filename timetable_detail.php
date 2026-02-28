@@ -265,9 +265,15 @@ foreach ($bookings as $b) {
       </div>
     </div>
     <?php if ($isToday): ?>
-    <div id="liveStatus" class="text-xs text-gray-400 font-medium flex items-center gap-1.5">
-      <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"></span>
-      <span id="liveStatusText">กำลังโหลด...</span>
+    <div class="flex items-center gap-3">
+      <div id="liveStatus" class="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"></span>
+        <span id="liveStatusText">กำลังโหลด...</span>
+      </div>
+      <button onclick="testAlert()"
+              class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+        ทดสอบแจ้งเตือน
+      </button>
     </div>
     <?php endif; ?>
   </div>
@@ -941,55 +947,97 @@ const bkAlerts = [
   const notifiedEnd  = new Set();
   const notifiedWarn = new Set();
 
-  // Mark already-ended/warned bookings so we don't re-alert on page load
+  // Pre-mark only truly ENDED bookings (not the 5-min window)
+  // so warnings still fire if page opens during last 5 minutes
   bkAlerts.forEach(bk => {
-    if (Date.now() >= bk.endTs)                  notifiedEnd.add(bk.id);
-    if (Date.now() >= bk.endTs - 5 * 60 * 1000)  notifiedWarn.add(bk.id);
+    if (Date.now() >= bk.endTs) {
+      notifiedEnd.add(bk.id);
+      notifiedWarn.add(bk.id); // suppress warning for already-ended bookings
+    }
   });
+
+  function fireWarn(bk, now) {
+    notifiedWarn.add(bk.id);
+    const minsLeft = Math.max(1, Math.round((bk.endTs - now) / 60000));
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'warning',
+      title: `<span style="font-size:15px;font-weight:700;">${bk.court} ใกล้หมดเวลา</span>`,
+      html: `<span style="font-size:13px;">${bk.name} · เหลืออีก <b>${minsLeft} นาที</b></span>`,
+      showConfirmButton: false,
+      timer: 12000,
+      timerProgressBar: true,
+      background: '#fffbeb',
+      color: '#92400e',
+      iconColor: '#d97706',
+    });
+  }
+
+  function fireEnd(bk) {
+    notifiedEnd.add(bk.id);
+    Swal.fire({
+      icon: 'info',
+      title: `${bk.court} หมดเวลาแล้ว`,
+      html: `ลูกค้า <b>${bk.name}</b><br>เล่นครบเวลาแล้ว กรุณาเตรียมคอร์ตสำหรับรายถัดไป`,
+      confirmButtonText: 'รับทราบ',
+      confirmButtonColor: '#005691',
+      timer: 30000,
+      timerProgressBar: true,
+    });
+  }
 
   function checkAlerts() {
     const now = Date.now();
     bkAlerts.forEach(bk => {
-      if (now < bk.startTs) return; // booking hasn't started yet
+      if (now < bk.startTs) return; // ยังไม่เริ่ม
 
-      // ⚠️ 5-minute warning
-      if (now >= bk.endTs - 5 * 60 * 1000 && !notifiedWarn.has(bk.id)) {
-        notifiedWarn.add(bk.id);
-        const minsLeft = Math.max(1, Math.round((bk.endTs - now) / 60000));
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'warning',
-          title: `<span style="font-size:15px;font-weight:700;">${bk.court} ใกล้หมดเวลา</span>`,
-          html: `<span style="font-size:13px;">${bk.name} · เหลืออีก <b>${minsLeft} นาที</b></span>`,
-          showConfirmButton: false,
-          timer: 12000,
-          timerProgressBar: true,
-          background: '#fffbeb',
-          color: '#92400e',
-          iconColor: '#d97706',
-        });
-      }
-
-      // 🔴 Time's up
+      // 🔴 หมดเวลา
       if (now >= bk.endTs && !notifiedEnd.has(bk.id)) {
-        notifiedEnd.add(bk.id);
-        Swal.fire({
-          icon: 'info',
-          title: `${bk.court} หมดเวลาแล้ว`,
-          html: `ลูกค้า <b>${bk.name}</b><br>เล่นครบเวลาแล้ว กรุณาเตรียมคอร์ตสำหรับรายถัดไป`,
-          confirmButtonText: 'รับทราบ',
-          confirmButtonColor: '#005691',
-          timer: 30000,
-          timerProgressBar: true,
-        });
+        fireEnd(bk);
+        return;
+      }
+      // ⚠️ เหลือ 5 นาที
+      if (now >= bk.endTs - 5 * 60 * 1000 && !notifiedWarn.has(bk.id)) {
+        fireWarn(bk, now);
       }
     });
   }
 
+  // Expose for test button
+  window._checkAlertsNow = checkAlerts;
+
   checkAlerts();
-  setInterval(checkAlerts, 30000); // ตรวจทุก 30 วินาที
+  setInterval(checkAlerts, 30000);
 })();
+
+// ปุ่มทดสอบ
+window.testAlert = function() {
+  Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'warning',
+    title: '<span style="font-size:15px;font-weight:700;">คอร์ต 2 ใกล้หมดเวลา</span>',
+    html: '<span style="font-size:13px;">ทดสอบ · เหลืออีก <b>5 นาที</b></span>',
+    showConfirmButton: false,
+    timer: 8000,
+    timerProgressBar: true,
+    background: '#fffbeb',
+    color: '#92400e',
+    iconColor: '#d97706',
+  });
+  setTimeout(() => {
+    Swal.fire({
+      icon: 'info',
+      title: 'คอร์ต 2 หมดเวลาแล้ว',
+      html: 'ลูกค้า <b>ทดสอบระบบ</b><br>เล่นครบเวลาแล้ว กรุณาเตรียมคอร์ตสำหรับรายถัดไป',
+      confirmButtonText: 'รับทราบ',
+      confirmButtonColor: '#005691',
+      timer: 15000,
+      timerProgressBar: true,
+    });
+  }, 3000);
+};
 <?php endif; ?>
 </script>
 </body>
