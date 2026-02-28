@@ -3,54 +3,55 @@ require_once __DIR__ . '/config/db.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 $isLoggedIn = isset($_SESSION['user']);
 
-$date = $_GET['date'] ?? date('Y-m-d');
-
 $courts = $pdo->query('SELECT * FROM courts ORDER BY court_type DESC, vip_room_name ASC, court_no ASC')->fetchAll();
-$vipCourts = array_filter($courts, fn($c) => $c['court_type'] === 'vip' || $c['is_vip'] == 1);
-$normalCourts = array_filter($courts, fn($c) => $c['court_type'] === 'normal' || $c['is_vip'] == 0);
+$vipCourts    = array_filter($courts, fn($c) => $c['court_type'] === 'vip' || $c['is_vip'] == 1);
+$normalCourts = array_filter($courts, fn($c) => !($c['court_type'] === 'vip' || $c['is_vip'] == 1));
 
-$startDay = $date . ' 00:00:00';
-$endDay   = $date . ' 23:59:59';
+// ดึงเฉพาะการจองที่กำลังเล่นอยู่ตอนนี้
 $stmt = $pdo->prepare("
     SELECT b.*, c.court_no, c.court_type, c.vip_room_name, c.is_vip
     FROM bookings b
     JOIN courts c ON b.court_id = c.id
     WHERE b.status = 'booked'
-      AND b.start_datetime BETWEEN ? AND ?
-    ORDER BY c.court_type DESC, c.vip_room_name ASC, c.court_no, b.start_datetime
+      AND b.start_datetime <= NOW()
+      AND DATE_ADD(b.start_datetime, INTERVAL b.duration_hours HOUR) > NOW()
+    ORDER BY c.court_type DESC, c.vip_room_name ASC, c.court_no
 ");
-$stmt->execute([$startDay, $endDay]);
-$bookings = $stmt->fetchAll();
+$stmt->execute();
+$activeBookings = $stmt->fetchAll();
 
-$grid = [];
-$gridDetails = [];
-foreach ($courts as $c) {
-    $grid[$c['id']] = array_fill(0, 48, '');
-    $gridDetails[$c['id']] = array_fill(0, 48, null);
+// map court_id => active booking
+$activeByCourt = [];
+foreach ($activeBookings as $b) {
+    $activeByCourt[$b['court_id']] = $b;
 }
 
-foreach ($bookings as $b) {
-    $s = new DateTime($b['start_datetime']);
-    $startHour = (int)$s->format('G');
-    $startMin = (int)$s->format('i');
-    $startSlot = $startHour * 2 + ($startMin >= 30 ? 1 : 0);
-    $totalSlots = $b['duration_hours'] * 2;
-    for ($i = 0; $i < $totalSlots; $i++) {
-        $slot = $startSlot + $i;
-        if ($slot >= 0 && $slot < 48) {
-            $grid[$b['court_id']][$slot] = 'จองแล้ว';
-            $gridDetails[$b['court_id']][$slot] = $b;
-        }
+// ดึงการจองถัดไปวันนี้ (ยังไม่ถึงเวลา) — per court เอาอันใกล้สุด
+$nextStmt = $pdo->prepare("
+    SELECT b.*, c.court_no, c.court_type, c.vip_room_name, c.is_vip
+    FROM bookings b
+    JOIN courts c ON b.court_id = c.id
+    WHERE b.status = 'booked'
+      AND b.start_datetime > NOW()
+      AND DATE(b.start_datetime) = CURDATE()
+    ORDER BY b.start_datetime ASC
+");
+$nextStmt->execute();
+$upcomingAll = $nextStmt->fetchAll();
+
+$nextByCourt = [];
+foreach ($upcomingAll as $b) {
+    if (!isset($nextByCourt[$b['court_id']])) {
+        $nextByCourt[$b['court_id']] = $b;
     }
 }
 
-$dateObj = new DateTime($date);
+$now = new DateTime();
 $thaiMonths = [1=>'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-$thaiDays = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-$dayName = $thaiDays[(int)$dateObj->format('w')];
-$thaiDate = "วัน$dayName ที่ ".$dateObj->format('d')." ".$thaiMonths[(int)$dateObj->format('n')]." ".($dateObj->format('Y')+543);
+$thaiDays   = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+$thaiDate   = 'วัน'.$thaiDays[(int)$now->format('w')].' ที่ '.$now->format('d').' '.$thaiMonths[(int)$now->format('n')].' '.($now->format('Y')+543);
 
-function getCourtDisplayName($court) {
+function getCourtDisplayName($court): string {
     if ($court['court_type'] === 'vip' || $court['is_vip'] == 1) return $court['vip_room_name'] ?? 'ห้อง VIP';
     return 'คอร์ต ' . $court['court_no'];
 }
@@ -60,50 +61,20 @@ function getCourtDisplayName($court) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="60">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-  <title>ตารางคอร์ต - <?= htmlspecialchars($date) ?> - BARGAIN SPORT</title>
+  <title>สถานะคอร์ตปัจจุบัน - BARGAIN SPORT</title>
   <style>
     * { font-family: 'Prompt', sans-serif !important; }
-    .booking-item {
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 6px;
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: opacity 0.15s;
-    }
-    .booking-booked { background: #004A7C; color: white; }
-    .booking-vip { background: #005691; color: white; }
-    .booking-empty { background: #E8F1F5; color: #666; cursor: default; }
-    .court-card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      border: 1px solid #e5e7eb;
-    }
-    .court-header {
-      font-size: 15px;
-      font-weight: 600;
-      color: #005691;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .bookings-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 8px;
-    }
-    .bookings-grid .booking-empty { grid-column: 1 / -1; }
+    .court-card { background:white; border-radius:14px; border:1px solid #e5e7eb; overflow:hidden; }
+    .court-active { border-color:#004A7C; }
+    .court-active-vip { border-color:#005691; }
   </style>
 </head>
 <body style="background:#FAFAFA;" class="min-h-screen">
 
-<!-- Simple Header -->
+<!-- Nav -->
 <nav style="background:#005691;" class="sticky top-0 z-50 shadow-md">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-14">
@@ -130,82 +101,82 @@ function getCourtDisplayName($court) {
   </div>
 </nav>
 
-<div class="max-w-6xl mx-auto px-4 py-8">
+<div class="max-w-6xl mx-auto px-4 py-6">
 
   <!-- Header -->
   <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
-        <h1 style="color:#005691;" class="text-2xl font-bold mb-1">ตารางคอร์ตแบดมินตัน</h1>
-        <p class="text-gray-500 text-sm"><?= $thaiDate ?></p>
+        <h1 style="color:#005691;" class="text-xl font-bold">สถานะคอร์ตขณะนี้</h1>
+        <p class="text-gray-400 text-sm mt-0.5"><?= $thaiDate ?></p>
       </div>
-
-      <form method="get" class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-        <input type="date" name="date" value="<?= htmlspecialchars($date) ?>"
-               class="px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
-        <button type="submit"
-                style="background:#004A7C;"
-                class="px-5 py-2 text-white text-sm rounded-lg hover:opacity-90 transition-opacity">
-          แสดงตาราง
-        </button>
-      </form>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block animate-pulse"></span>
+          <span class="text-sm font-semibold text-gray-700" id="liveClock"><?= $now->format('H:i') ?></span>
+        </div>
+        <span class="text-xs text-gray-400">รีเฟรชอัตโนมัติทุก 60 วิ</span>
+      </div>
     </div>
   </div>
 
   <!-- Legend -->
-  <div class="bg-white rounded-xl border border-gray-200 p-4 mb-5 flex flex-wrap gap-4 items-center">
-    <div class="flex items-center gap-2 text-sm">
-      <div class="w-4 h-4 rounded" style="background:#E8F1F5;"></div>
-      <span class="text-gray-600">ว่าง</span>
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-3 mb-5 flex gap-5 flex-wrap">
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+      <div class="w-3 h-3 rounded-full bg-green-400"></div>ว่าง
     </div>
-    <div class="flex items-center gap-2 text-sm">
-      <div class="w-4 h-4 rounded" style="background:#004A7C;"></div>
-      <span class="text-gray-600">จองแล้ว (คอร์ตปกติ)</span>
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+      <div class="w-3 h-3 rounded-full" style="background:#004A7C;"></div>กำลังเล่น (ปกติ)
     </div>
-    <div class="flex items-center gap-2 text-sm">
-      <div class="w-4 h-4 rounded" style="background:#005691;"></div>
-      <span class="text-gray-600">จองแล้ว (VIP)</span>
-    </div>
-    <div class="flex-1 text-right">
-      <span class="text-xs text-gray-400">เข้าสู่ระบบเพื่อดูรายละเอียดเพิ่มเติม</span>
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+      <div class="w-3 h-3 rounded-full" style="background:#005691;"></div>กำลังเล่น (VIP)
     </div>
   </div>
 
   <!-- VIP Rooms -->
-  <?php if (count($vipCourts) > 0): ?>
+  <?php if (!empty($vipCourts)): ?>
   <div class="mb-6">
-    <h2 style="color:#005691;" class="text-lg font-bold mb-3">ห้อง VIP</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <h2 class="text-sm font-semibold mb-3" style="color:#004A7C;">ห้อง VIP</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <?php foreach ($vipCourts as $c):
-        $displayName = getCourtDisplayName($c);
+        $name   = getCourtDisplayName($c);
+        $active = $activeByCourt[$c['id']] ?? null;
       ?>
-      <div class="court-card">
-        <div class="court-header">
-          <?= htmlspecialchars($displayName) ?>
-          <?php if ($c['vip_price']): ?>
-          <span class="text-sm font-normal text-gray-400 ml-1">(<?= number_format($c['vip_price'], 0) ?> ฿/ชม.)</span>
-          <?php endif; ?>
+      <div class="court-card <?= $active ? 'court-active-vip' : '' ?>">
+        <!-- Card header -->
+        <div class="px-4 py-3 flex items-center gap-2"
+             style="background:<?= $active ? '#005691' : '#f8fafc' ?>;">
+          <span class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0"
+                style="background:<?= $active ? 'rgba(255,255,255,.2)' : '#E8F1F5' ?>;color:<?= $active ? '#fff' : '#005691' ?>;">V</span>
+          <span class="font-semibold text-sm truncate" style="color:<?= $active ? '#fff' : '#005691' ?>;"><?= htmlspecialchars($name) ?></span>
+          <span class="ml-auto text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0
+            <?= $active ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700' ?>">
+            <?= $active ? 'กำลังเล่น' : 'ว่าง' ?>
+          </span>
         </div>
-        <div class="bookings-grid">
+        <!-- Card body -->
+        <div class="px-4 py-3">
           <?php
-          $displayed = [];
-          for ($slot = 0; $slot < 48; $slot++):
-            $name = $grid[$c['id']][$slot];
-            $details = $gridDetails[$c['id']][$slot];
-            if (!empty($name) && $details && !in_array($details['id'], $displayed)):
-              $displayed[] = $details['id'];
-              $startDate = new DateTime($details['start_datetime']);
-              $endDate = new DateTime('@' . ($startDate->getTimestamp() + ($details['duration_hours'] * 3600)));
+            $next = $nextByCourt[$c['id']] ?? null;
+            if ($active):
+            $sd = new DateTime($active['start_datetime']);
+            $ed = (clone $sd)->modify('+' . (int)$active['duration_hours'] . ' hour');
+            $remainMin = (int)(($ed->getTimestamp() - $now->getTimestamp()) / 60);
           ?>
-            <div class="booking-item booking-vip">
-              <div>
-                <div class="font-medium">จองแล้ว</div>
-                <div class="text-xs opacity-80 mt-0.5"><?= $startDate->format('H:i') ?> - <?= $endDate->format('H:i') ?></div>
-              </div>
-            </div>
-          <?php endif; endfor; ?>
-          <?php if (empty($displayed)): ?>
-            <div class="booking-item booking-empty">ทั้งหมดว่าง</div>
+          <p class="font-semibold text-gray-800"><?= htmlspecialchars($active['customer_name']) ?></p>
+          <p class="text-xs text-gray-400 mt-0.5"><?= $sd->format('H:i') ?> – <?= $ed->format('H:i') ?></p>
+          <p class="text-xs font-medium mt-2" style="color:#005691;">เหลืออีก <?= $remainMin ?> นาที</p>
+          <?php elseif ($next):
+            $nsd = new DateTime($next['start_datetime']);
+            $ned = (clone $nsd)->modify('+' . (int)$next['duration_hours'] . ' hour');
+            $waitMin = (int)(($nsd->getTimestamp() - $now->getTimestamp()) / 60);
+          ?>
+          <p class="text-xs text-gray-400 mb-1">ว่างอยู่ · จองถัดไป</p>
+          <p class="font-semibold text-gray-800 text-sm"><?= htmlspecialchars($next['customer_name']) ?></p>
+          <p class="text-xs text-gray-400 mt-0.5"><?= $nsd->format('H:i') ?> – <?= $ned->format('H:i') ?></p>
+          <p class="text-xs text-orange-400 font-medium mt-1">อีก <?= $waitMin ?> นาที</p>
+          <?php else: ?>
+          <p class="text-sm text-gray-400 py-1">ว่าง — ไม่มีการจองวันนี้</p>
           <?php endif; ?>
         </div>
       </div>
@@ -215,40 +186,49 @@ function getCourtDisplayName($court) {
   <?php endif; ?>
 
   <!-- Normal Courts -->
-  <?php if (count($normalCourts) > 0): ?>
+  <?php if (!empty($normalCourts)): ?>
   <div class="mb-6">
-    <h2 style="color:#005691;" class="text-lg font-bold mb-3">คอร์ตปกติ</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <h2 class="text-sm font-semibold mb-3" style="color:#005691;">คอร์ตปกติ</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <?php foreach ($normalCourts as $c):
-        $displayName = getCourtDisplayName($c);
+        $name   = getCourtDisplayName($c);
+        $active = $activeByCourt[$c['id']] ?? null;
       ?>
-      <div class="court-card">
-        <div class="court-header flex items-center gap-2">
-          <span style="background:#005691;" class="w-7 h-7 rounded flex items-center justify-center text-white text-xs font-bold">
-            <?= htmlspecialchars($c['court_no']) ?>
+      <div class="court-card <?= $active ? 'court-active' : '' ?>">
+        <!-- Card header -->
+        <div class="px-4 py-3 flex items-center gap-2"
+             style="background:<?= $active ? '#004A7C' : '#f8fafc' ?>;">
+          <span class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0"
+                style="background:<?= $active ? 'rgba(255,255,255,.2)' : '#E8F1F5' ?>;color:<?= $active ? '#fff' : '#005691' ?>;"><?= $c['court_no'] ?></span>
+          <span class="font-semibold text-sm truncate" style="color:<?= $active ? '#fff' : '#005691' ?>;"><?= htmlspecialchars($name) ?></span>
+          <span class="ml-auto text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0
+            <?= $active ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700' ?>">
+            <?= $active ? 'กำลังเล่น' : 'ว่าง' ?>
           </span>
-          <?= htmlspecialchars($displayName) ?>
         </div>
-        <div class="bookings-grid">
+        <!-- Card body -->
+        <div class="px-4 py-3">
           <?php
-          $displayed = [];
-          for ($slot = 0; $slot < 48; $slot++):
-            $name = $grid[$c['id']][$slot];
-            $details = $gridDetails[$c['id']][$slot];
-            if (!empty($name) && $details && !in_array($details['id'], $displayed)):
-              $displayed[] = $details['id'];
-              $startDate = new DateTime($details['start_datetime']);
-              $endDate = new DateTime('@' . ($startDate->getTimestamp() + ($details['duration_hours'] * 3600)));
+            $next = $nextByCourt[$c['id']] ?? null;
+            if ($active):
+            $sd = new DateTime($active['start_datetime']);
+            $ed = (clone $sd)->modify('+' . (int)$active['duration_hours'] . ' hour');
+            $remainMin = (int)(($ed->getTimestamp() - $now->getTimestamp()) / 60);
           ?>
-            <div class="booking-item booking-booked">
-              <div>
-                <div class="font-medium">จองแล้ว</div>
-                <div class="text-xs opacity-80 mt-0.5"><?= $startDate->format('H:i') ?> - <?= $endDate->format('H:i') ?></div>
-              </div>
-            </div>
-          <?php endif; endfor; ?>
-          <?php if (empty($displayed)): ?>
-            <div class="booking-item booking-empty">ทั้งหมดว่าง</div>
+          <p class="font-semibold text-gray-800"><?= htmlspecialchars($active['customer_name']) ?></p>
+          <p class="text-xs text-gray-400 mt-0.5"><?= $sd->format('H:i') ?> – <?= $ed->format('H:i') ?></p>
+          <p class="text-xs font-medium mt-2" style="color:#004A7C;">เหลืออีก <?= $remainMin ?> นาที</p>
+          <?php elseif ($next):
+            $nsd = new DateTime($next['start_datetime']);
+            $ned = (clone $nsd)->modify('+' . (int)$next['duration_hours'] . ' hour');
+            $waitMin = (int)(($nsd->getTimestamp() - $now->getTimestamp()) / 60);
+          ?>
+          <p class="text-xs text-gray-400 mb-1">ว่างอยู่ · จองถัดไป</p>
+          <p class="font-semibold text-gray-800 text-sm"><?= htmlspecialchars($next['customer_name']) ?></p>
+          <p class="text-xs text-gray-400 mt-0.5"><?= $nsd->format('H:i') ?> – <?= $ned->format('H:i') ?></p>
+          <p class="text-xs text-orange-400 font-medium mt-1">อีก <?= $waitMin ?> นาที</p>
+          <?php else: ?>
+          <p class="text-sm text-gray-400 py-1">ว่าง — ไม่มีการจองวันนี้</p>
           <?php endif; ?>
         </div>
       </div>
@@ -257,49 +237,11 @@ function getCourtDisplayName($court) {
   </div>
   <?php endif; ?>
 
-  <!-- Stats -->
-  <?php
-  $totalSlots = count($courts) * 48;
-  $bookedSlots = 0;
-  foreach ($grid as $courtData) {
-    foreach ($courtData as $slot) { if (!empty($slot)) $bookedSlots++; }
-  }
-  $freeSlots = $totalSlots - $bookedSlots;
-  $occupancyRate = $totalSlots > 0 ? round(($bookedSlots / $totalSlots) * 100, 1) : 0;
-  ?>
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-    <div class="bg-white rounded-xl border border-gray-200 p-4">
-      <p class="text-gray-400 text-xs mb-1">ช่วงเวลาทั้งหมด</p>
-      <p style="color:#005691;" class="text-2xl font-bold"><?= $totalSlots ?></p>
-      <p class="text-gray-400 text-xs">30 นาที/ช่วง</p>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-4">
-      <p class="text-gray-400 text-xs mb-1">จองแล้ว</p>
-      <p style="color:#004A7C;" class="text-2xl font-bold"><?= $bookedSlots ?></p>
-      <p class="text-gray-400 text-xs"><?= round($bookedSlots/2, 1) ?> ชั่วโมง</p>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-4">
-      <p class="text-gray-400 text-xs mb-1">ว่าง</p>
-      <p style="color:#10b981;" class="text-2xl font-bold"><?= $freeSlots ?></p>
-      <p class="text-gray-400 text-xs"><?= round($freeSlots/2, 1) ?> ชั่วโมง</p>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-4">
-      <p class="text-gray-400 text-xs mb-1">อัตราการใช้</p>
-      <p style="color:#005691;" class="text-2xl font-bold"><?= $occupancyRate ?>%</p>
-      <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-        <div style="width:<?= $occupancyRate ?>%; background:#004A7C;" class="h-1.5 rounded-full"></div>
-      </div>
-    </div>
-  </div>
-
   <?php if (!$isLoggedIn): ?>
-  <!-- Login CTA -->
-  <div class="mt-6 bg-white rounded-xl border border-gray-200 p-6 text-center">
-    <h3 style="color:#005691;" class="text-lg font-semibold mb-2">ต้องการดูรายละเอียดเพิ่มเติมหรือจองคอร์ต?</h3>
-    <p class="text-gray-500 text-sm mb-4">เข้าสู่ระบบเพื่อดูชื่อผู้จอง เบอร์โทร และจัดการการจอง</p>
-    <a href="/auth/login.php"
-       style="background:#FF0000;"
-       class="inline-block px-6 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+  <div class="mt-2 bg-white rounded-xl border border-gray-200 p-5 text-center">
+    <p class="text-gray-500 text-sm mb-3">เข้าสู่ระบบเพื่อจัดการการจองและดูรายละเอียดเพิ่มเติม</p>
+    <a href="/auth/login.php" style="background:#FF0000;"
+       class="inline-block px-6 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
       เข้าสู่ระบบ
     </a>
   </div>
@@ -307,9 +249,21 @@ function getCourtDisplayName($court) {
 
 </div>
 
-<footer style="background:#005691;" class="mt-12 py-4 text-center text-sm text-blue-200">
+<footer style="background:#005691;" class="mt-10 py-4 text-center text-sm text-blue-200">
   © <?= date('Y') ?> Boat Patthanapong &nbsp;|&nbsp; BARGAIN SPORT System
 </footer>
 
+<script>
+// Live clock
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('liveClock').textContent = hh + ':' + mm + ':' + ss;
+}
+updateClock();
+setInterval(updateClock, 1000);
+</script>
 </body>
 </html>

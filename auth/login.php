@@ -192,7 +192,10 @@ function loginGetCourtName(array $c): string {
                                     $ed = (clone $sd)->modify('+' . (int)$det['duration_hours'] . ' hour');
                             ?>
                             <div class="bk-item bk-vip">
-                                <span><?= $sd->format('H:i') ?>–<?= $ed->format('H:i') ?></span>
+                                <div>
+                                    <div><?= $sd->format('H:i') ?>–<?= $ed->format('H:i') ?></div>
+                                    <div class="opacity-80 text-xs mt-0.5"><?= htmlspecialchars($det['customer_name']) ?></div>
+                                </div>
                                 <span class="opacity-70"><?= $det['duration_hours'] ?>ชม.</span>
                             </div>
                             <?php endif; endfor; ?>
@@ -227,7 +230,10 @@ function loginGetCourtName(array $c): string {
                                     $ed = (clone $sd)->modify('+' . (int)$det['duration_hours'] . ' hour');
                             ?>
                             <div class="bk-item bk-booked">
-                                <span><?= $sd->format('H:i') ?>–<?= $ed->format('H:i') ?></span>
+                                <div>
+                                    <div><?= $sd->format('H:i') ?>–<?= $ed->format('H:i') ?></div>
+                                    <div class="opacity-80 text-xs mt-0.5"><?= htmlspecialchars($det['customer_name']) ?></div>
+                                </div>
                                 <span class="opacity-70"><?= $det['duration_hours'] ?>ชม.</span>
                             </div>
                             <?php endif; endfor; ?>
