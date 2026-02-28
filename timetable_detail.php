@@ -93,6 +93,7 @@ foreach ($bookings as $b) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <title>ตารางคอร์ต – <?= htmlspecialchars($thaiDate) ?></title>
   <style>
     /* ---- Timeline table ---- */
@@ -921,6 +922,75 @@ function setView(v) {
 }
 // Restore saved preference on load
 (function() { setView(localStorage.getItem('timetableView') || 'timeline'); })();
+
+<?php if ($isToday): ?>
+// ===================== SweetAlert2 Court Expiry Notifications =====================
+const bkAlerts = [
+<?php foreach ($uniqueBookings as $bk):
+    $s = new DateTime($bk['start_datetime']);
+    $e = (clone $s)->modify('+' . (int)$bk['duration_hours'] . ' hour');
+    $courtLabel = ($bk['court_type'] === 'vip' || $bk['is_vip'] == 1)
+        ? ($bk['vip_room_name'] ?? 'ห้อง VIP')
+        : 'คอร์ต ' . $bk['court_no'];
+?>
+  { id: <?= $bk['id'] ?>, court: <?= json_encode($courtLabel, JSON_UNESCAPED_UNICODE) ?>, name: <?= json_encode($bk['customer_name'], JSON_UNESCAPED_UNICODE) ?>, startTs: <?= $s->getTimestamp() * 1000 ?>, endTs: <?= $e->getTimestamp() * 1000 ?> },
+<?php endforeach; ?>
+];
+
+(function () {
+  const notifiedEnd  = new Set();
+  const notifiedWarn = new Set();
+
+  // Mark already-ended/warned bookings so we don't re-alert on page load
+  bkAlerts.forEach(bk => {
+    if (Date.now() >= bk.endTs)                  notifiedEnd.add(bk.id);
+    if (Date.now() >= bk.endTs - 5 * 60 * 1000)  notifiedWarn.add(bk.id);
+  });
+
+  function checkAlerts() {
+    const now = Date.now();
+    bkAlerts.forEach(bk => {
+      if (now < bk.startTs) return; // booking hasn't started yet
+
+      // ⚠️ 5-minute warning
+      if (now >= bk.endTs - 5 * 60 * 1000 && !notifiedWarn.has(bk.id)) {
+        notifiedWarn.add(bk.id);
+        const minsLeft = Math.max(1, Math.round((bk.endTs - now) / 60000));
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'warning',
+          title: `<span style="font-size:15px;font-weight:700;">${bk.court} ใกล้หมดเวลา</span>`,
+          html: `<span style="font-size:13px;">${bk.name} · เหลืออีก <b>${minsLeft} นาที</b></span>`,
+          showConfirmButton: false,
+          timer: 12000,
+          timerProgressBar: true,
+          background: '#fffbeb',
+          color: '#92400e',
+          iconColor: '#d97706',
+        });
+      }
+
+      // 🔴 Time's up
+      if (now >= bk.endTs && !notifiedEnd.has(bk.id)) {
+        notifiedEnd.add(bk.id);
+        Swal.fire({
+          icon: 'info',
+          title: `${bk.court} หมดเวลาแล้ว`,
+          html: `ลูกค้า <b>${bk.name}</b><br>เล่นครบเวลาแล้ว กรุณาเตรียมคอร์ตสำหรับรายถัดไป`,
+          confirmButtonText: 'รับทราบ',
+          confirmButtonColor: '#005691',
+          timer: 30000,
+          timerProgressBar: true,
+        });
+      }
+    });
+  }
+
+  checkAlerts();
+  setInterval(checkAlerts, 30000); // ตรวจทุก 30 วินาที
+})();
+<?php endif; ?>
 </script>
 </body>
 </html>
