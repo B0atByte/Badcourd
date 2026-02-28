@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add'])) {
         $error = 'กรุณากรอกข้อมูลให้ครบถ้วน';
     } elseif ($end_time <= $start_time) {
         $error = 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น';
-    } elseif ($price_per_hour < 50 || $price_per_hour > 10000) {
-        $error = 'ราคาต้องอยู่ระหว่าง 50–10,000 บาท';
+    } elseif ($price_per_hour < 1 || $price_per_hour > 10000) {
+        $error = 'ราคาต้องอยู่ระหว่าง 1–10,000 บาท';
     } else {
         try {
             $pdo->prepare('INSERT INTO pricing_rules(group_id,day_type,start_time,end_time,price_per_hour) VALUES(?,?,?,?,?)')
@@ -525,7 +525,7 @@ function timelineSlots(array $rules, string $day_type): array {
                   <label class="block text-xs font-medium text-gray-600 mb-1.5">ราคา (฿/ชม.)</label>
                   <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">฿</span>
-                    <input type="number" name="price_per_hour" required min="50" max="10000" step="10" value="400"
+                    <input type="number" name="price_per_hour" required min="1" max="10000" step="1" value="400"
                            class="w-full pl-7 pr-16 py-2.5 border border-gray-300 rounded-lg focus:border-blue-400 outline-none text-sm font-mono">
                     <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">/ชม.</span>
                   </div>
