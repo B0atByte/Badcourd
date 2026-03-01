@@ -7,20 +7,23 @@ $success = $error = '';
 
 // --- ADD ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add'])) {
-    $code             = strtoupper(trim($_POST['code'] ?? ''));
-    $name             = trim($_POST['name'] ?? '');
+    $code          = strtoupper(trim($_POST['code'] ?? ''));
+    $name          = trim($_POST['name'] ?? '');
+    $discount_type = in_array($_POST['discount_type'] ?? '', ['percent','fixed']) ? $_POST['discount_type'] : 'percent';
     $discount_percent = (float)($_POST['discount_percent'] ?? 0);
-    $start_date       = $_POST['start_date'] ?? '';
-    $end_date         = $_POST['end_date'] ?? '';
-    $description      = trim($_POST['description'] ?? '');
-    $created_by       = $_SESSION['user']['id'];
+    $start_date    = $_POST['start_date'] ?? '';
+    $end_date      = $_POST['end_date'] ?? '';
+    $description   = trim($_POST['description'] ?? '');
+    $created_by    = $_SESSION['user']['id'];
 
     if (!preg_match('/^[A-Z0-9]{3,30}$/', $code)) {
         $error = 'รหัสโปรโมชั่นต้องเป็นตัวอักษรภาษาอังกฤษหรือตัวเลข 3-30 ตัว ไม่มีช่องว่าง';
     } elseif (empty($name)) {
         $error = 'กรุณาระบุชื่อโปรโมชั่น';
-    } elseif ($discount_percent < 1 || $discount_percent > 100) {
+    } elseif ($discount_type === 'percent' && ($discount_percent < 1 || $discount_percent > 100)) {
         $error = 'ส่วนลดต้องอยู่ระหว่าง 1-100%';
+    } elseif ($discount_type === 'fixed' && ($discount_percent <= 0 || $discount_percent > 99999)) {
+        $error = 'จำนวนเงินลดต้องอยู่ระหว่าง 1-99,999 บาท';
     } elseif (empty($start_date) || empty($end_date)) {
         $error = 'กรุณาระบุวันที่เริ่มต้นและสิ้นสุด';
     } elseif ($end_date < $start_date) {
@@ -28,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add'])) {
     } else {
         try {
             $stmt = $pdo->prepare('
-                INSERT INTO promotions (code, name, discount_percent, start_date, end_date, description, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO promotions (code, name, discount_type, discount_percent, start_date, end_date, description, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
-            $stmt->execute([$code, $name, $discount_percent, $start_date, $end_date, $description, $created_by]);
+            $stmt->execute([$code, $name, $discount_type, $discount_percent, $start_date, $end_date, $description, $created_by]);
             header('Location: promotions.php?added=1'); exit;
         } catch (PDOException $e) {
             $error = 'รหัสโปรโมชั่น "' . htmlspecialchars($code) . '" มีอยู่แล้ว กรุณาใช้รหัสอื่น';
@@ -187,10 +190,31 @@ $promotions = $pStmt->fetchAll();
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">ส่วนลด (%)</label>
-        <input type="number" name="discount_percent" required min="1" max="100" step="0.5"
-               placeholder="เช่น 15"
-               class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+        <label class="block text-xs font-medium text-gray-600 mb-1">ประเภทส่วนลด</label>
+        <div class="flex gap-4 py-2.5">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="discount_type" value="percent" id="dtPercent" checked
+                   onchange="updateDiscountLabel()"
+                   class="accent-[#005691]">
+            <span class="text-sm text-gray-700">ลดเป็น %</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="discount_type" value="fixed" id="dtFixed"
+                   onchange="updateDiscountLabel()"
+                   class="accent-[#005691]">
+            <span class="text-sm text-gray-700">ลดเป็นบาท (คงที่)</span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1" id="discountLabel">ส่วนลด (%)</label>
+        <div class="relative">
+          <input type="number" name="discount_percent" id="discountInput" required min="1" step="0.5"
+                 placeholder="เช่น 15"
+                 class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm pr-12">
+          <span id="discountUnit" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
+        </div>
       </div>
 
       <div>
@@ -299,7 +323,10 @@ $promotions = $pStmt->fetchAll();
             <p class="text-gray-400 text-xs font-mono mt-0.5"><?= htmlspecialchars($p['code']) ?></p>
           </div>
           <div class="flex flex-col items-end gap-1">
-            <span class="text-lg font-bold" style="color:#005691;"><?= $p['discount_percent'] ?>%</span>
+            <span class="text-lg font-bold" style="color:#005691;">
+              <?php $dtype = $p['discount_type'] ?? 'percent'; ?>
+              <?= number_format($p['discount_percent'], ($p['discount_percent'] == floor($p['discount_percent']) ? 0 : 2)) ?><?= $dtype === 'fixed' ? ' บ.' : '%' ?>
+            </span>
             <span class="text-xs px-2 py-0.5 rounded-full <?= $badgeClass ?>"><?= $badgeText ?></span>
           </div>
         </div>
@@ -366,7 +393,9 @@ $promotions = $pStmt->fetchAll();
               <?php endif; ?>
             </td>
             <td class="px-5 py-3 text-center">
-              <span style="color:#005691;" class="text-lg font-bold"><?= $p['discount_percent'] ?>%</span>
+              <?php $dtype = $p['discount_type'] ?? 'percent'; ?>
+              <span style="color:#005691;" class="text-lg font-bold"><?= number_format($p['discount_percent'], ($p['discount_percent'] == floor($p['discount_percent']) ? 0 : 2)) ?></span>
+              <span class="text-xs text-gray-500"><?= $dtype === 'fixed' ? ' บาท' : '%' ?></span>
             </td>
             <td class="px-5 py-3 text-center text-gray-500 text-xs"><?= date('d/m/Y', strtotime($p['start_date'])) ?></td>
             <td class="px-5 py-3 text-center text-gray-500 text-xs"><?= date('d/m/Y', strtotime($p['end_date'])) ?></td>
@@ -408,5 +437,20 @@ $promotions = $pStmt->fetchAll();
 </div>
 
 <?php include __DIR__.'/../includes/footer.php'; ?>
+<script>
+function updateDiscountLabel() {
+  const isFixed = document.getElementById('dtFixed').checked;
+  document.getElementById('discountLabel').textContent = isFixed ? 'จำนวนเงินที่ลด (บาท)' : 'ส่วนลด (%)';
+  document.getElementById('discountUnit').textContent  = isFixed ? '฿' : '%';
+  const inp = document.getElementById('discountInput');
+  if (isFixed) {
+    inp.removeAttribute('max');
+    inp.placeholder = 'เช่น 50';
+  } else {
+    inp.setAttribute('max', '100');
+    inp.placeholder = 'เช่น 15';
+  }
+}
+</script>
 </body>
 </html>

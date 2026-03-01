@@ -264,18 +264,18 @@ foreach ($bookings as $b) {
         <div class="w-2 h-4 rounded" style="background:#ef4444;"></div>เวลาปัจจุบัน
       </div>
     </div>
-    <?php if ($isToday): ?>
     <div class="flex items-center gap-3">
+      <?php if ($isToday): ?>
       <div id="liveStatus" class="text-xs text-gray-400 font-medium flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"></span>
         <span id="liveStatusText">กำลังโหลด...</span>
       </div>
+      <?php endif; ?>
       <button onclick="testAlert()"
               class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
         ทดสอบแจ้งเตือน
       </button>
     </div>
-    <?php endif; ?>
   </div>
 
   <!-- ===== Timeline View ===== -->
@@ -520,9 +520,10 @@ foreach ($bookings as $b) {
           <p class="text-xs text-gray-400 mb-0.5">เบอร์โทร</p>
           <p class="font-semibold text-gray-800 text-sm" id="modalPhone">–</p>
         </div>
-        <div class="bg-gray-50 rounded-xl p-3">
-          <p class="text-xs text-gray-400 mb-0.5">วันที่</p>
+        <div class="bg-gray-50 rounded-xl p-3 col-span-2">
+          <p class="text-xs text-gray-400 mb-0.5">วันที่ &amp; เวลา</p>
           <p class="font-medium text-gray-800 text-sm" id="modalDate">–</p>
+          <p class="text-xs text-[#005691] font-semibold mt-0.5" id="modalTimeSlot">–</p>
         </div>
         <div class="bg-gray-50 rounded-xl p-3">
           <p class="text-xs text-gray-400 mb-0.5">ระยะเวลา</p>
@@ -659,10 +660,12 @@ function showModal(booking, courtName, isVip) {
   document.getElementById('modalCustomer').textContent  = booking.customer_name || '–';
   document.getElementById('modalPhone').textContent     = booking.customer_phone || '–';
 
-  // Date
+  // Date + Time slot
   const thm = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   document.getElementById('modalDate').textContent =
     startDate.getDate() + ' ' + thm[startDate.getMonth()] + ' ' + (startDate.getFullYear()+543);
+  const fmtT = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('modalTimeSlot').textContent = fmtT(startDate) + '–' + fmtT(endDate);
   document.getElementById('modalDuration').textContent = booking.duration_hours + ' ชั่วโมง';
 
   // Price
@@ -1015,7 +1018,7 @@ const bkAlerts = [
   setInterval(checkAlerts, 30000);
 })();
 
-// ปุ่มทดสอบ
+// ปุ่มทดสอบ (ทำงานได้ทุกวัน ไม่จำกัดเฉพาะวันนี้)
 window.testAlert = function() {
   Swal.fire({
     toast: true,

@@ -53,6 +53,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("UPDATE members SET status = ? WHERE id = ?");
         $stmt->execute([$new_status, $member_id]);
         $success = 'อัปเดตสถานะสำเร็จ';
+    } elseif ($_POST['action'] === 'delete_member') {
+        $member_id = (int)$_POST['member_id'];
+        if ($member_id > 0) {
+            try {
+                $pdo->beginTransaction();
+
+                // อัปเดต bookings ให้ member_id = NULL เพื่อคง booking ไว้
+                $pdo->prepare("UPDATE bookings SET member_id = NULL WHERE member_id = ?")->execute([$member_id]);
+
+                // ลบประวัติ point transactions
+                $pdo->prepare("DELETE FROM point_transactions WHERE member_id = ?")->execute([$member_id]);
+
+                // ลบสมาชิก
+                $pdo->prepare("DELETE FROM members WHERE id = ?")->execute([$member_id]);
+
+                $pdo->commit();
+                $success = 'ลบสมาชิกเรียบร้อยแล้ว';
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error = 'ไม่สามารถลบสมาชิกได้: ' . $e->getMessage();
+            }
+        }
     }
 }
 
@@ -132,6 +154,7 @@ $levelColors = [
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>จัดการสมาชิก - BARGAIN SPORT</title>
 </head>
 <body style="background:#FAFAFA;" class="min-h-screen">
@@ -166,15 +189,15 @@ $levelColors = [
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <p class="text-sm text-gray-500 mb-1">สมาชิกที่ใช้งาน</p>
-                <p class="text-2xl font-bold" style="color:#005691;"><?= number_format($stats['active_members']) ?></p>
+                <p class="text-2xl font-bold" style="color:#005691;"><?= number_format($stats['active_members'] ?? 0) ?></p>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <p class="text-sm text-gray-500 mb-1">รายได้รวม</p>
-                <p class="text-2xl font-bold text-gray-900">฿<?= number_format($stats['total_revenue'], 0) ?></p>
+                <p class="text-2xl font-bold text-gray-900">฿<?= number_format($stats['total_revenue'] ?? 0, 0) ?></p>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <p class="text-sm text-gray-500 mb-1">แต้มรวม</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($stats['total_points']) ?></p>
+                <p class="text-2xl font-bold text-gray-900"><?= number_format($stats['total_points'] ?? 0) ?></p>
             </div>
         </div>
 
@@ -329,10 +352,19 @@ $levelColors = [
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                                         <?php else: ?>
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                        <?php endif; ?>
+                                                         <?php endif; ?>
                                                     </svg>
                                                 </button>
                                             </form>
+                                            <!-- ลบสมาชิก -->
+                                            <button type="button"
+                                                    onclick="confirmDelete(<?= $member['id'] ?>, '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', <?= (int)$member['total_bookings'] ?>)"
+                                                    class="text-sm text-red-500 hover:text-red-700 transition-colors"
+                                                    title="ลบสมาชิก">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -395,6 +427,12 @@ $levelColors = [
 
     <?php include __DIR__ . '/../includes/footer.php'; ?>
 
+    <!-- Delete hidden form -->
+    <form id="deleteForm" method="post" class="hidden">
+        <input type="hidden" name="action" value="delete_member">
+        <input type="hidden" name="member_id" id="delete_member_id">
+    </form>
+
     <script>
     function openAdjustModal(memberId, memberName, currentPoints) {
         document.getElementById('adjust_member_id').value = memberId;
@@ -420,6 +458,38 @@ $levelColors = [
             closeAdjustModal();
         }
     });
+
+    // ยืนยันลบสมาชิก
+    function confirmDelete(memberId, memberName, totalBookings) {
+        const bookingNote = totalBookings > 0
+            ? `<p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+                 ⚠️ สมาชิกนี้มีประวัติการจอง <b>${totalBookings} รายการ</b> — ข้อมูลการจองยังคงอยู่ แต่จะถูกยกเลิกความเป็นสมาชิก
+               </p>`
+            : '';
+
+        Swal.fire({
+            title: 'ลบสมาชิก?',
+            html: `
+                <p class="text-gray-600">กำลังจะลบสมาชิก:</p>
+                <p class="font-bold text-gray-900 text-lg my-1">${memberName}</p>
+                <p class="text-xs text-gray-400">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+                ${bookingNote}
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'ใช่ ลบเลย',
+            cancelButtonText: 'ยกเลิก',
+            reverseButtons: true,
+            focusCancel: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete_member_id').value = memberId;
+                document.getElementById('deleteForm').submit();
+            }
+        });
+    }
     </script>
 </body>
 </html>

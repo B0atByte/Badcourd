@@ -16,7 +16,8 @@
       "Bash(cd /c/Users/patthanapong/Desktop/BARGAIN_SPORT && git stash && git pull origin main --rebase 2>&1)",
       "Bash(wc:*)",
       "Bash(test:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(timeout 30 bash:*)"
     ]
   }
 }

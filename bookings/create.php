@@ -14,7 +14,7 @@ if (!isset($_SESSION['user'])) {
 
 $courts = $pdo->query("SELECT * FROM courts WHERE status <> 'Maintenance' ORDER BY court_type DESC, vip_room_name ASC, court_no")->fetchAll();
 $today = date('Y-m-d');
-$promoQuery = $pdo->prepare("SELECT id, code, name, discount_percent FROM promotions WHERE is_active = 1 AND start_date <= ? AND end_date >= ? ORDER BY name ASC");
+$promoQuery = $pdo->prepare("SELECT id, code, name, discount_percent, discount_type FROM promotions WHERE is_active = 1 AND start_date <= ? AND end_date >= ? ORDER BY name ASC");
 $promoQuery->execute([$today, $today]);
 $activePromos = $promoQuery->fetchAll();
 $success = $error = '';
@@ -24,7 +24,7 @@ $posted_customer_name = '';
 $posted_customer_phone = '';
 $posted_date = date('Y-m-d');
 $posted_start_time = '16:00';
-$posted_hours = 2;
+$posted_hours = 1;
 $posted_discount = 0;
 $posted_promotion_id = null;
 
@@ -129,7 +129,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($applied_promotion_id) {
-            $discount = (int)floor($pph * $hours * $applied_promo_percent / 100);
+            $promoType = $promoRow['discount_type'] ?? 'percent';
+            if ($promoType === 'fixed') {
+                // ลดเป็นจำนวนเงินคงที่
+                $discount = min((float)$promoRow['discount_percent'], $pph * $hours);
+            } else {
+                // ลดเป็น %
+                $discount = (int)floor($pph * $hours * $applied_promo_percent / 100);
+            }
             $total = compute_total($pph, $hours, $discount);
         }
 
@@ -222,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $posted_customer_phone = '';
             $posted_date = date('Y-m-d');
             $posted_start_time = '16:00';
-            $posted_hours = 2;
+            $posted_hours = 1;
             $posted_discount = 0;
             $posted_promotion_id = null;
         }
