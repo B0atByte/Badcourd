@@ -141,6 +141,12 @@ foreach ($bookings as $b) {
     .tl-court-cell-vip { background: #f0f4ff; color: #004A7C; }
     .tl-court-cell-head { font-size: 11px; color: rgba(255,255,255,.8); font-weight: 500; }
 
+    /* Search highlight / dim */
+    .search-highlight { outline: 3px solid #f59e0b !important; outline-offset: -2px; z-index: 5; position: relative; }
+    .search-dim        { opacity: .2 !important; pointer-events: none; }
+    .search-highlight-card { outline: 3px solid #f59e0b !important; border-radius: 8px; }
+    .search-dim-card   { opacity: .2 !important; }
+
     /* Current time line */
     #timeLine {
       position: absolute; top: 0; bottom: 0; width: 2px;
@@ -278,6 +284,28 @@ foreach ($bookings as $b) {
     </div>
   </div>
 
+  <!-- ===== Search Bar ===== -->
+  <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 mb-4">
+    <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+      <div class="relative flex-1">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" id="bookingSearch"
+          placeholder="ค้นหาชื่อลูกค้าหรือเบอร์โทร..."
+          oninput="doSearch(this.value)"
+          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-[#005691] focus:ring-1 focus:ring-[#005691]/20">
+      </div>
+      <button onclick="clearSearch()" id="btnClearSearch"
+        class="hidden px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 whitespace-nowrap">
+        ล้าง
+      </button>
+      <div id="searchResultBadge" class="hidden px-3 py-2 text-xs font-semibold rounded-lg whitespace-nowrap" style="background:#FEF3C7;color:#92400E;"></div>
+    </div>
+    <!-- Result list (shown when searching) -->
+    <div id="searchResultList" class="hidden mt-3 divide-y divide-gray-100 max-h-48 overflow-y-auto rounded-lg border border-gray-100"></div>
+  </div>
+
   <!-- ===== Timeline View ===== -->
   <div id="viewTimeline">
   <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
@@ -347,7 +375,9 @@ foreach ($bookings as $b) {
             ?>
             <td class="tl-booked <?= $bookedCls ?>"
                 colspan="<?= $colspan ?>"
+                data-bk-id="<?= $bk['id'] ?>"
                 data-bk-name="<?= htmlspecialchars($bk['customer_name'], ENT_QUOTES) ?>"
+                data-bk-phone="<?= htmlspecialchars($bk['customer_phone'] ?? '', ENT_QUOTES) ?>"
                 data-bk-court="<?= htmlspecialchars($courtName, ENT_QUOTES) ?>"
                 data-bk-badge="<?= $isVip ? 'V' : $c['court_no'] ?>"
                 data-bk-start="<?= $startDt->format('H:i') ?>"
@@ -421,6 +451,9 @@ foreach ($bookings as $b) {
             ?>
             <div class="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity bk-card-item"
                  style="background:#EDF4FA;"
+                 data-bk-id="<?= $bk['id'] ?>"
+                 data-bk-name="<?= htmlspecialchars(strtolower($bk['customer_name']), ENT_QUOTES) ?>"
+                 data-bk-phone="<?= htmlspecialchars(strtolower($bk['customer_phone'] ?? ''), ENT_QUOTES) ?>"
                  data-bk-start-ts="<?= $startDt->getTimestamp() ?>"
                  data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
                  onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, true)">
@@ -468,6 +501,9 @@ foreach ($bookings as $b) {
             ?>
             <div class="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity bk-card-item"
                  style="background:#EDF4FA;"
+                 data-bk-id="<?= $bk['id'] ?>"
+                 data-bk-name="<?= htmlspecialchars(strtolower($bk['customer_name']), ENT_QUOTES) ?>"
+                 data-bk-phone="<?= htmlspecialchars(strtolower($bk['customer_phone'] ?? ''), ENT_QUOTES) ?>"
                  data-bk-start-ts="<?= $startDt->getTimestamp() ?>"
                  data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
                  onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, false)">
@@ -628,6 +664,109 @@ foreach ($bookings as $b) {
 </div>
 
 <script>
+// ===================== Booking Search =====================
+function doSearch(q) {
+  const term = q.trim().toLowerCase();
+  const input     = document.getElementById('bookingSearch');
+  const badge     = document.getElementById('searchResultBadge');
+  const resultList = document.getElementById('searchResultList');
+  const clearBtn  = document.getElementById('btnClearSearch');
+
+  // Timeline cells
+  const tlCells = document.querySelectorAll('.tl-booked[data-bk-name]');
+  // Card items
+  const cardItems = document.querySelectorAll('.bk-card-item');
+
+  if (!term) {
+    tlCells.forEach(el => el.classList.remove('search-highlight', 'search-dim'));
+    cardItems.forEach(el => el.classList.remove('search-highlight-card', 'search-dim-card'));
+    badge.classList.add('hidden');
+    resultList.classList.add('hidden');
+    clearBtn.classList.add('hidden');
+    return;
+  }
+
+  clearBtn.classList.remove('hidden');
+
+  // Match timeline cells – collect unique booking IDs that match
+  const matchedIds = new Set();
+  tlCells.forEach(el => {
+    const name  = (el.dataset.bkName  || '').toLowerCase();
+    const phone = (el.dataset.bkPhone || '').toLowerCase();
+    const match = name.includes(term) || phone.includes(term);
+    el.classList.toggle('search-highlight', match);
+    el.classList.toggle('search-dim',       !match);
+    if (match && el.dataset.bkId) matchedIds.add(el.dataset.bkId);
+  });
+
+  // Match card items
+  cardItems.forEach(el => {
+    const name  = (el.dataset.bkName  || '').toLowerCase();
+    const phone = (el.dataset.bkPhone || '').toLowerCase();
+    const match = name.includes(term) || phone.includes(term);
+    el.classList.toggle('search-highlight-card', match);
+    el.classList.toggle('search-dim-card',       !match);
+    if (match && el.dataset.bkId) matchedIds.add(el.dataset.bkId);
+  });
+
+  const count = matchedIds.size;
+
+  if (count === 0) {
+    badge.textContent = 'ไม่พบข้อมูล';
+    badge.style.background = '#FEE2E2';
+    badge.style.color = '#991B1B';
+  } else {
+    badge.textContent = `พบ ${count} รายการ`;
+    badge.style.background = '#FEF3C7';
+    badge.style.color = '#92400E';
+  }
+  badge.classList.remove('hidden');
+
+  // Build result list from timeline cells (unique bookings)
+  const seen = new Set();
+  const rows = [];
+  tlCells.forEach(el => {
+    const id = el.dataset.bkId;
+    if (!id || seen.has(id)) return;
+    const name  = (el.dataset.bkName  || '').toLowerCase();
+    const phone = (el.dataset.bkPhone || '').toLowerCase();
+    if (!(name.includes(term) || phone.includes(term))) return;
+    seen.add(id);
+    rows.push({
+      name:  el.dataset.bkName,
+      phone: el.dataset.bkPhone,
+      court: el.dataset.bkCourt,
+      start: el.dataset.bkStart,
+      end:   el.dataset.bkEnd,
+      vip:   el.dataset.bkVip === '1',
+    });
+  });
+
+  if (rows.length > 0) {
+    resultList.innerHTML = rows.map(r => `
+      <div class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+             style="background:${r.vip ? '#004A7C' : '#005691'};">${r.vip ? 'V' : '●'}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-gray-800 truncate">${escHtml(r.name)}</p>
+          <p class="text-xs text-gray-400">${escHtml(r.phone)} · ${escHtml(r.court)} · ${r.start}–${r.end}</p>
+        </div>
+      </div>`).join('');
+    resultList.classList.remove('hidden');
+  } else {
+    resultList.classList.add('hidden');
+  }
+}
+
+function clearSearch() {
+  document.getElementById('bookingSearch').value = '';
+  doSearch('');
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ===================== Constants =====================
 const SLOT_W      = 48;   // px per half-hour slot (must match CSS)
 const COURT_COL_W = 130;  // px for sticky court column

@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql
--- Generation Time: Mar 01, 2026 at 05:51 PM
--- Server version: 8.0.45
+-- Generation Time: Mar 02, 2026 at 10:18 AM
+-- Server version: 8.0.44
 -- PHP Version: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -81,7 +81,9 @@ INSERT INTO `bookings` (`id`, `court_id`, `customer_name`, `customer_phone`, `me
 (42, 20, 'qqqqq', '0855555555', NULL, NULL, NULL, NULL, '2026-02-27 20:00:00', 3, 150.00, 0.00, 450.00, 'booked', 5, '2026-02-27 11:20:40', NULL),
 (43, 20, 'wwwww', '1000000000', NULL, NULL, NULL, NULL, '2026-02-27 18:00:00', 2, 150.00, 0.00, 300.00, 'booked', 5, '2026-02-27 11:27:57', NULL),
 (44, 11, 'Test User', '0888888888', NULL, NULL, NULL, 'uploads/slips/slip_44_69a46a41e54c3.jpg', '2026-03-01 23:00:00', 1, 100.00, 0.00, 100.00, 'booked', 5, '2026-03-01 16:33:05', NULL),
-(45, 11, 'Test Modal', '0123456789', NULL, NULL, NULL, 'uploads/slips/slip_45_69a46a9f0c052.jpg', '2026-03-02 14:00:00', 1, 100.00, 0.00, 100.00, 'booked', 5, '2026-03-01 16:34:39', NULL);
+(45, 11, 'Test Modal', '0123456789', NULL, NULL, NULL, 'uploads/slips/slip_45_69a46a9f0c052.jpg', '2026-03-02 14:00:00', 1, 100.00, 0.00, 100.00, 'booked', 5, '2026-03-01 16:34:39', NULL),
+(46, 19, 'พพๆๆ', '0111111111', NULL, NULL, NULL, NULL, '2026-03-02 18:30:00', 1, 150.00, 0.00, 150.00, 'booked', 5, '2026-03-02 07:57:34', NULL),
+(47, 28, '123', '0111111111', 5, NULL, NULL, NULL, '2026-03-02 17:12:00', 1, 150.00, 0.00, 150.00, 'booked', 5, '2026-03-02 09:35:10', NULL);
 
 -- --------------------------------------------------------
 
@@ -156,6 +158,13 @@ CREATE TABLE `members` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `members`
+--
+
+INSERT INTO `members` (`id`, `phone`, `name`, `email`, `points`, `total_bookings`, `total_spent`, `member_level`, `joined_date`, `last_booking_date`, `birth_date`, `status`, `notes`) VALUES
+(5, '0111111111', '123', NULL, 1, 1, 150.00, 'Bronze', '2026-03-02 16:35:10', '2026-03-02 16:35:10', NULL, 'active', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -164,14 +173,14 @@ CREATE TABLE `members` (
 
 CREATE TABLE `member_yoga_packages` (
   `id` int NOT NULL,
-  `student_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `student_phone` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `yoga_package_type_id` int NOT NULL,
   `sessions_total` int NOT NULL,
   `sessions_used` int NOT NULL DEFAULT '0',
   `purchase_date` date NOT NULL,
   `expiry_date` date DEFAULT NULL,
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_by` int DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -182,7 +191,7 @@ CREATE TABLE `member_yoga_packages` (
 
 INSERT INTO `member_yoga_packages` (`id`, `student_name`, `student_phone`, `yoga_package_type_id`, `sessions_total`, `sessions_used`, `purchase_date`, `expiry_date`, `notes`, `created_by`, `created_at`) VALUES
 (1, 'สมใจ ใจดี', '0891234567', 2, 12, 1, '2026-03-01', '2026-06-29', NULL, 5, '2026-03-01 17:10:33'),
-(2, 'นักเรียน ทดสอบ', '0899999999', 1, 6, 0, '2026-03-02', '2026-05-31', NULL, 5, '2026-03-01 17:43:45');
+(2, 'นักเรียน ทดสอบ1', '0899999999', 1, 6, 0, '2026-03-02', '2026-05-31', NULL, 5, '2026-03-01 17:43:45');
 
 -- --------------------------------------------------------
 
@@ -200,6 +209,13 @@ CREATE TABLE `point_transactions` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `created_by` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `point_transactions`
+--
+
+INSERT INTO `point_transactions` (`id`, `member_id`, `booking_id`, `points`, `type`, `description`, `created_at`, `created_by`) VALUES
+(9, 5, 47, 1, 'earn', 'รับแต้มจากการจอง (฿150)', '2026-03-02 16:35:10', 5);
 
 -- --------------------------------------------------------
 
@@ -257,7 +273,7 @@ CREATE TABLE `promotions` (
   `code` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'à¸£à¸«à¸±à¸ªà¹‚à¸›à¸£à¹‚à¸¡à¸Šà¸±à¹ˆà¸™ à¹€à¸Šà¹ˆà¸™ STAFF15',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'à¸Šà¸·à¹ˆà¸­à¹‚à¸›à¸£à¹‚à¸¡à¸Šà¸±à¹ˆà¸™ à¹€à¸Šà¹ˆà¸™ à¸žà¸™à¸±à¸à¸‡à¸²à¸™ 15%',
   `discount_percent` decimal(5,2) NOT NULL COMMENT 'à¸ªà¹ˆà¸§à¸™à¸¥à¸” % à¹€à¸Šà¹ˆà¸™ 15.00',
-  `discount_type` enum('percent','fixed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'percent' COMMENT 'percent=%, fixed=fixed amount',
+  `discount_type` enum('percent','fixed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'percent' COMMENT 'percent=%, fixed=fixed amount',
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -288,6 +304,7 @@ CREATE TABLE `users` (
   `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `role` enum('admin','user') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'user',
+  `permissions` json DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -296,9 +313,9 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `password_hash`, `role`, `active`, `created_at`) VALUES
-(5, 'admin', '$2y$10$b6VpLbYoLcvnyyh4q0IxLuqA2wEXC9gnRpsYm8UxRzVzRiwWV.Ada', 'admin', 1, '2025-10-26 10:21:18'),
-(6, 'user', '$2y$10$PqgmcioIWeduQN/qtuMT.eYhbCFpoPsJFNLSiYxVbQANlYCFITmfa', 'user', 1, '2025-10-26 10:41:19');
+INSERT INTO `users` (`id`, `username`, `password_hash`, `role`, `permissions`, `active`, `created_at`) VALUES
+(5, 'admin', '$2y$10$b6VpLbYoLcvnyyh4q0IxLuqA2wEXC9gnRpsYm8UxRzVzRiwWV.Ada', 'admin', NULL, 1, '2025-10-26 10:21:18'),
+(6, 'user', '$2y$10$PqgmcioIWeduQN/qtuMT.eYhbCFpoPsJFNLSiYxVbQANlYCFITmfa', 'user', '[\"timetable\", \"bookings\", \"members\", \"yoga_classes\", \"yoga_packages\", \"courts\", \"reports\"]', 1, '2025-10-26 10:41:19');
 
 -- --------------------------------------------------------
 
@@ -309,10 +326,10 @@ INSERT INTO `users` (`id`, `username`, `password_hash`, `role`, `active`, `creat
 CREATE TABLE `yoga_bookings` (
   `id` int NOT NULL,
   `yoga_course_id` int NOT NULL,
-  `student_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `student_phone` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `member_package_id` int DEFAULT NULL,
-  `status` enum('booked','attended','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'booked',
+  `status` enum('booked','attended','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'booked',
   `created_by` int DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `attended_at` timestamp NULL DEFAULT NULL
@@ -338,9 +355,9 @@ CREATE TABLE `yoga_courses` (
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
   `room` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'à¸«à¹‰à¸­à¸‡à¸£à¹ˆà¸§à¸¡',
-  `instructor` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `instructor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `max_students` int NOT NULL DEFAULT '15',
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_by` int DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -360,7 +377,7 @@ INSERT INTO `yoga_courses` (`id`, `course_date`, `start_time`, `end_time`, `room
 
 CREATE TABLE `yoga_package_types` (
   `id` int NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `sessions_total` int NOT NULL COMMENT 'à¸„à¸£à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸‹à¸·à¹‰à¸­',
   `bonus_sessions` int NOT NULL DEFAULT '0' COMMENT 'à¸„à¸£à¸±à¹‰à¸‡à¹à¸–à¸¡',
   `price` decimal(10,2) NOT NULL,
@@ -496,7 +513,7 @@ ALTER TABLE `yoga_package_types`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `booking_logs`
@@ -514,7 +531,7 @@ ALTER TABLE `courts`
 -- AUTO_INCREMENT for table `members`
 --
 ALTER TABLE `members`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `member_yoga_packages`
@@ -526,7 +543,7 @@ ALTER TABLE `member_yoga_packages`
 -- AUTO_INCREMENT for table `point_transactions`
 --
 ALTER TABLE `point_transactions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `pricing_groups`

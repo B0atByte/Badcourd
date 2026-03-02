@@ -1,7 +1,9 @@
 <?php
+require_once __DIR__ . '/../auth/guard.php';
 require_once __DIR__ . '/../config/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
 
 $code = isset($_GET['code']) ? strtoupper(trim($_GET['code'])) : '';
 
@@ -27,19 +29,19 @@ try {
     if ($promo) {
         echo json_encode([
             'success' => true,
-            'found'   => true,
+            'found' => true,
             'promotion' => [
-                'id'               => (int)$promo['id'],
-                'code'             => $promo['code'],
-                'name'             => $promo['name'],
-                'discount_percent' => (float)$promo['discount_percent'],
+                'id' => (int) $promo['id'],
+                'code' => $promo['code'],
+                'name' => $promo['name'],
+                'discount_percent' => (float) $promo['discount_percent'],
             ],
             'message' => 'พบโปรโมชั่น: ' . $promo['name'],
         ], JSON_UNESCAPED_UNICODE);
     } else {
         echo json_encode([
             'success' => true,
-            'found'   => false,
+            'found' => false,
             'message' => 'ไม่พบโปรโมชั่น หรือโปรโมชั่นหมดอายุแล้ว',
         ], JSON_UNESCAPED_UNICODE);
     }

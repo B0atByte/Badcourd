@@ -3,22 +3,15 @@ header('Content-Type: text/html; charset=utf-8');
 require_once __DIR__ . '/../auth/guard.php';
 require_once __DIR__ . '/../config/db.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-    header('Location: /auth/login.php');
-    exit;
-}
+require_permission('members');
 
 $success = $error = '';
 
 // Handle point adjustment
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'adjust_points') {
-        $member_id = (int)$_POST['member_id'];
-        $points_change = (int)$_POST['points_change'];
+        $member_id = (int) $_POST['member_id'];
+        $points_change = (int) $_POST['points_change'];
         $description = trim($_POST['description']);
 
         try {
@@ -47,14 +40,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $error = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
         }
     } elseif ($_POST['action'] === 'toggle_status') {
-        $member_id = (int)$_POST['member_id'];
+        $member_id = (int) $_POST['member_id'];
         $new_status = $_POST['new_status'] === 'active' ? 'active' : 'inactive';
 
         $stmt = $pdo->prepare("UPDATE members SET status = ? WHERE id = ?");
         $stmt->execute([$new_status, $member_id]);
         $success = 'อัปเดตสถานะสำเร็จ';
+    } elseif ($_POST['action'] === 'edit_member') {
+        $member_id = (int) $_POST['member_id'];
+        $name  = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        if (empty($name)) {
+            $error = 'กรุณากรอกชื่อ';
+        } else {
+            $pdo->prepare("UPDATE members SET name=?, email=? WHERE id=?")
+                ->execute([$name, $email ?: null, $member_id]);
+            $success = 'อัปเดตข้อมูลสมาชิกเรียบร้อย';
+        }
     } elseif ($_POST['action'] === 'delete_member') {
-        $member_id = (int)$_POST['member_id'];
+        $member_id = (int) $_POST['member_id'];
         if ($member_id > 0) {
             try {
                 $pdo->beginTransaction();
@@ -79,31 +83,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Search and filter
-$search       = trim($_GET['search'] ?? '');
-$level_filter = $_GET['level']  ?? '';
+$search = trim($_GET['search'] ?? '');
+$level_filter = $_GET['level'] ?? '';
 $status_filter = $_GET['status'] ?? '';
 
 // Pagination
 $per_page_raw = $_GET['per_page'] ?? '25';
-$per_page     = ($per_page_raw === 'all') ? 0 : (int)$per_page_raw;
-if (!in_array($per_page, [0, 10, 25, 50, 100])) $per_page = 25;
-$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = ($per_page_raw === 'all') ? 0 : (int) $per_page_raw;
+if (!in_array($per_page, [0, 10, 25, 50, 100]))
+    $per_page = 25;
+$page = max(1, (int) ($_GET['page'] ?? 1));
 
-$where  = ['1=1'];
+$where = ['1=1'];
 $params = [];
 
 if (!empty($search)) {
-    $where[]  = '(phone LIKE ? OR name LIKE ?)';
-    $sp       = '%' . $search . '%';
+    $where[] = '(phone LIKE ? OR name LIKE ?)';
+    $sp = '%' . $search . '%';
     $params[] = $sp;
     $params[] = $sp;
 }
 if (!empty($level_filter)) {
-    $where[]  = 'member_level = ?';
+    $where[] = 'member_level = ?';
     $params[] = $level_filter;
 }
 if (!empty($status_filter)) {
-    $where[]  = 'status = ?';
+    $where[] = 'status = ?';
     $params[] = $status_filter;
 }
 
@@ -112,20 +117,21 @@ $whereClause = implode(' AND ', $where);
 // Total count
 $countStmt = $pdo->prepare("SELECT COUNT(*) FROM members WHERE $whereClause");
 $countStmt->execute($params);
-$totalRecords = (int)$countStmt->fetchColumn();
+$totalRecords = (int) $countStmt->fetchColumn();
 
 // Pagination calc
 $totalPages = 1;
-$offset     = 0;
+$offset = 0;
 if ($per_page > 0) {
-    $totalPages = max(1, (int)ceil($totalRecords / $per_page));
-    $page       = min($page, $totalPages);
-    $offset     = ($page - 1) * $per_page;
+    $totalPages = max(1, (int) ceil($totalRecords / $per_page));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $per_page;
 }
 
 // Get members
 $sql = "SELECT * FROM members WHERE $whereClause ORDER BY total_spent DESC, joined_date DESC";
-if ($per_page > 0) $sql .= " LIMIT $per_page OFFSET $offset";
+if ($per_page > 0)
+    $sql .= " LIMIT $per_page OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $members = $stmt->fetchAll();
@@ -150,6 +156,7 @@ $levelColors = [
 ?>
 <!doctype html>
 <html lang="th">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -157,6 +164,7 @@ $levelColors = [
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>จัดการสมาชิก - BARGAIN SPORT</title>
 </head>
+
 <body style="background:#FAFAFA;" class="min-h-screen">
     <?php include __DIR__ . '/../includes/header.php'; ?>
 
@@ -170,15 +178,15 @@ $levelColors = [
 
         <!-- Messages -->
         <?php if ($success): ?>
-        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
-            <?= htmlspecialchars($success) ?>
-        </div>
+            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
+                <?= htmlspecialchars($success) ?>
+            </div>
         <?php endif; ?>
 
         <?php if ($error): ?>
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
-            <?= htmlspecialchars($error) ?>
-        </div>
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
+                <?= htmlspecialchars($error) ?>
+            </div>
         <?php endif; ?>
 
         <!-- Stats -->
@@ -189,7 +197,8 @@ $levelColors = [
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <p class="text-sm text-gray-500 mb-1">สมาชิกที่ใช้งาน</p>
-                <p class="text-2xl font-bold" style="color:#005691;"><?= number_format($stats['active_members'] ?? 0) ?></p>
+                <p class="text-2xl font-bold" style="color:#005691;"><?= number_format($stats['active_members'] ?? 0) ?>
+                </p>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <p class="text-sm text-gray-500 mb-1">รายได้รวม</p>
@@ -207,23 +216,22 @@ $levelColors = [
                 <!-- Row 1: Search + Filters -->
                 <div class="flex flex-col sm:flex-row gap-3">
                     <div class="flex-1">
-                        <input type="text" name="search"
-                               value="<?= htmlspecialchars($search) ?>"
-                               placeholder="🔍 ค้นหาด้วยเบอร์โทรหรือชื่อ..."
-                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                        <input type="text" name="search" value="<?= htmlspecialchars($search) ?>"
+                            placeholder="🔍 ค้นหาด้วยเบอร์โทรหรือชื่อ..."
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                     </div>
                     <select name="level"
-                            class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[130px]">
+                        class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[130px]">
                         <option value="">ทุกระดับ</option>
-                        <option value="Bronze"   <?= $level_filter === 'Bronze'   ? 'selected' : '' ?>>Bronze</option>
-                        <option value="Silver"   <?= $level_filter === 'Silver'   ? 'selected' : '' ?>>Silver</option>
-                        <option value="Gold"     <?= $level_filter === 'Gold'     ? 'selected' : '' ?>>Gold</option>
+                        <option value="Bronze" <?= $level_filter === 'Bronze' ? 'selected' : '' ?>>Bronze</option>
+                        <option value="Silver" <?= $level_filter === 'Silver' ? 'selected' : '' ?>>Silver</option>
+                        <option value="Gold" <?= $level_filter === 'Gold' ? 'selected' : '' ?>>Gold</option>
                         <option value="Platinum" <?= $level_filter === 'Platinum' ? 'selected' : '' ?>>Platinum</option>
                     </select>
                     <select name="status"
-                            class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[120px]">
+                        class="px-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-400 outline-none text-sm min-w-[120px]">
                         <option value="">ทุกสถานะ</option>
-                        <option value="active"   <?= $status_filter === 'active'   ? 'selected' : '' ?>>Active</option>
+                        <option value="active" <?= $status_filter === 'active' ? 'selected' : '' ?>>Active</option>
                         <option value="inactive" <?= $status_filter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
                     </select>
                 </div>
@@ -231,24 +239,23 @@ $levelColors = [
                 <div class="flex flex-wrap gap-2 items-center">
                     <label class="text-xs text-gray-500 whitespace-nowrap">แสดง</label>
                     <select name="per_page" onchange="this.form.submit()"
-                            class="px-3 py-2 rounded-lg border border-gray-300 outline-none text-sm">
-                        <option value="10"  <?= $per_page === 10  ? 'selected' : '' ?>>10 รายการ</option>
-                        <option value="25"  <?= $per_page === 25  ? 'selected' : '' ?>>25 รายการ</option>
-                        <option value="50"  <?= $per_page === 50  ? 'selected' : '' ?>>50 รายการ</option>
+                        class="px-3 py-2 rounded-lg border border-gray-300 outline-none text-sm">
+                        <option value="10" <?= $per_page === 10 ? 'selected' : '' ?>>10 รายการ</option>
+                        <option value="25" <?= $per_page === 25 ? 'selected' : '' ?>>25 รายการ</option>
+                        <option value="50" <?= $per_page === 50 ? 'selected' : '' ?>>50 รายการ</option>
                         <option value="100" <?= $per_page === 100 ? 'selected' : '' ?>>100 รายการ</option>
-                        <option value="all" <?= $per_page === 0   ? 'selected' : '' ?>>ทั้งหมด</option>
+                        <option value="all" <?= $per_page === 0 ? 'selected' : '' ?>>ทั้งหมด</option>
                     </select>
                     <div class="flex-1"></div>
-                    <button type="submit"
-                            style="background:#005691;"
-                            class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                    <button type="submit" style="background:#005691;"
+                        class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         ค้นหา
                     </button>
                     <?php if ($search !== '' || $level_filter !== '' || $status_filter !== ''): ?>
-                    <a href="/admin/members.php"
-                       class="px-5 py-2 text-gray-600 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
-                        ล้างตัวกรอง
-                    </a>
+                        <a href="/admin/members.php"
+                            class="px-5 py-2 text-gray-600 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                            ล้างตัวกรอง
+                        </a>
                     <?php endif; ?>
                 </div>
             </form>
@@ -261,11 +268,11 @@ $levelColors = [
                 <span class="text-sm text-gray-600 font-medium">
                     พบ <span style="color:#005691;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
                     <?php if ($search !== '' || $level_filter !== '' || $status_filter !== ''): ?>
-                    <span class="text-gray-400 text-xs">(กรองแล้ว)</span>
+                        <span class="text-gray-400 text-xs">(กรองแล้ว)</span>
                     <?php endif; ?>
                 </span>
                 <?php if ($per_page > 0 && $totalPages > 1): ?>
-                <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
+                    <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
                 <?php endif; ?>
             </div>
             <div class="overflow-x-auto">
@@ -275,19 +282,21 @@ $levelColors = [
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">สมาชิก</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ระดับ</th>
                             <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">แต้ม</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">จองทั้งหมด</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">ยอดใช้จ่าย</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">จองทั้งหมด
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">ยอดใช้จ่าย
+                            </th>
                             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">สถานะ</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         <?php if (count($members) === 0): ?>
-                        <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-500">
-                                ไม่พบข้อมูลสมาชิก
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="7" class="px-4 py-12 text-center text-gray-500">
+                                    ไม่พบข้อมูลสมาชิก
+                                </td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($members as $member): ?>
                                 <?php $colors = $levelColors[$member['member_level']] ?? $levelColors['Bronze']; ?>
@@ -299,7 +308,8 @@ $levelColors = [
                                         </div>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <span class="<?= $colors['bg'] ?> <?= $colors['text'] ?> <?= $colors['border'] ?> border px-2 py-1 rounded text-xs font-medium">
+                                        <span
+                                            class="<?= $colors['bg'] ?> <?= $colors['text'] ?> <?= $colors['border'] ?> border px-2 py-1 rounded text-xs font-medium">
                                             <?= htmlspecialchars($member['member_level']) ?>
                                         </span>
                                     </td>
@@ -314,55 +324,71 @@ $levelColors = [
                                     </td>
                                     <td class="px-4 py-3 text-center">
                                         <?php if ($member['status'] === 'active'): ?>
-                                        <span class="bg-green-100 text-green-800 border border-green-200 px-2 py-1 rounded text-xs font-medium">
-                                            Active
-                                        </span>
+                                            <span
+                                                class="bg-green-100 text-green-800 border border-green-200 px-2 py-1 rounded text-xs font-medium">
+                                                Active
+                                            </span>
                                         <?php else: ?>
-                                        <span class="bg-red-100 text-red-800 border border-red-200 px-2 py-1 rounded text-xs font-medium">
-                                            Inactive
-                                        </span>
+                                            <span
+                                                class="bg-red-100 text-red-800 border border-red-200 px-2 py-1 rounded text-xs font-medium">
+                                                Inactive
+                                            </span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="flex items-center justify-center gap-2">
-                                            <a href="/members/profile.php?id=<?= $member['id'] ?>"
-                                               class="text-sm" style="color:#005691;"
-                                               title="ดูโปรไฟล์">
+                                            <a href="/members/profile.php?id=<?= $member['id'] ?>" class="text-sm"
+                                                style="color:#005691;" title="ดูโปรไฟล์">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </a>
-                                            <button onclick="openAdjustModal(<?= $member['id'] ?>, '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', <?= $member['points'] ?>)"
-                                                    class="text-sm text-yellow-600"
-                                                    title="ปรับแต้ม">
+                                            <button
+                                                onclick="openEditModal(<?= $member['id'] ?>, '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($member['email'] ?? '', ENT_QUOTES) ?>')"
+                                                class="text-sm text-blue-500 hover:text-blue-700 transition-colors" title="แก้ไขข้อมูล">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.213l-4 1 1-4 12.362-12.726z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onclick="openAdjustModal(<?= $member['id'] ?>, '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', <?= $member['points'] ?>)"
+                                                class="text-sm text-yellow-600" title="ปรับแต้ม">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
                                             </button>
                                             <form method="post" class="inline" onsubmit="return confirm('แน่ใจหรือไม่?')">
                                                 <input type="hidden" name="action" value="toggle_status">
                                                 <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                                                <input type="hidden" name="new_status" value="<?= $member['status'] === 'active' ? 'inactive' : 'active' ?>">
+                                                <input type="hidden" name="new_status"
+                                                    value="<?= $member['status'] === 'active' ? 'inactive' : 'active' ?>">
                                                 <button type="submit"
-                                                        class="text-sm <?= $member['status'] === 'active' ? 'text-red-600' : 'text-green-600' ?>"
-                                                        title="<?= $member['status'] === 'active' ? 'ระงับ' : 'เปิดใช้งาน' ?>">
+                                                    class="text-sm <?= $member['status'] === 'active' ? 'text-red-600' : 'text-green-600' ?>"
+                                                    title="<?= $member['status'] === 'active' ? 'ระงับ' : 'เปิดใช้งาน' ?>">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <?php if ($member['status'] === 'active'): ?>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                                                         <?php else: ?>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                         <?php endif; ?>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        <?php endif; ?>
                                                     </svg>
                                                 </button>
                                             </form>
                                             <!-- ลบสมาชิก -->
                                             <button type="button"
-                                                    onclick="confirmDelete(<?= $member['id'] ?>, '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', <?= (int)$member['total_bookings'] ?>)"
-                                                    class="text-sm text-red-500 hover:text-red-700 transition-colors"
-                                                    title="ลบสมาชิก">
+                                                onclick="confirmDelete(<?= $member['id'] ?>, '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', <?= (int) $member['total_bookings'] ?>)"
+                                                class="text-sm text-red-500 hover:text-red-700 transition-colors"
+                                                title="ลบสมาชิก">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                             </button>
                                         </div>
@@ -379,6 +405,37 @@ $levelColors = [
 
     </div>
 
+    <!-- Edit Member Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">แก้ไขข้อมูลสมาชิก</h3>
+            <form method="post">
+                <input type="hidden" name="action" value="edit_member">
+                <input type="hidden" name="member_id" id="edit_member_id">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" id="edit_name" required placeholder="ชื่อ-นามสกุล"
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal">(ไม่บังคับ)</span></label>
+                    <input type="email" name="email" id="edit_email" placeholder="example@email.com"
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" style="background:#005691;"
+                        class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                        บันทึก
+                    </button>
+                    <button type="button" onclick="closeEditModal()"
+                        class="flex-1 px-4 py-2.5 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Adjust Points Modal -->
     <div id="adjustModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
@@ -391,33 +448,31 @@ $levelColors = [
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">สมาชิก</label>
                     <p class="text-gray-900 font-semibold" id="adjust_member_name"></p>
-                    <p class="text-sm text-gray-500">แต้มปัจจุบัน: <span id="adjust_current_points" class="font-semibold"></span> แต้ม</p>
+                    <p class="text-sm text-gray-500">แต้มปัจจุบัน: <span id="adjust_current_points"
+                            class="font-semibold"></span> แต้ม</p>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">ปรับแต้ม</label>
                     <input type="number" name="points_change" required
-                           placeholder="ใส่จำนวนเป็นบวกเพื่อเพิ่ม หรือลบเพื่อลด"
-                           class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                        placeholder="ใส่จำนวนเป็นบวกเพื่อเพิ่ม หรือลบเพื่อลด"
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
                     <p class="text-xs text-gray-500 mt-1">ใส่เลขบวก (+) เพื่อเพิ่มแต้ม หรือเลขลบ (-) เพื่อลดแต้ม</p>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียด</label>
-                    <textarea name="description" required rows="3"
-                              placeholder="เหตุผลในการปรับแต้ม..."
-                              class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm"></textarea>
+                    <textarea name="description" required rows="3" placeholder="เหตุผลในการปรับแต้ม..."
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="submit"
-                            style="background:#005691;"
-                            class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                    <button type="submit" style="background:#005691;"
+                        class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         บันทึก
                     </button>
-                    <button type="button"
-                            onclick="closeAdjustModal()"
-                            class="flex-1 px-4 py-2.5 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                    <button type="button" onclick="closeAdjustModal()"
+                        class="flex-1 px-4 py-2.5 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
                         ยกเลิก
                     </button>
                 </div>
@@ -434,62 +489,80 @@ $levelColors = [
     </form>
 
     <script>
-    function openAdjustModal(memberId, memberName, currentPoints) {
-        document.getElementById('adjust_member_id').value = memberId;
-        document.getElementById('adjust_member_name').textContent = memberName;
-        document.getElementById('adjust_current_points').textContent = currentPoints.toLocaleString('th-TH');
-        document.getElementById('adjustModal').classList.remove('hidden');
-    }
-
-    function closeAdjustModal() {
-        document.getElementById('adjustModal').classList.add('hidden');
-    }
-
-    // Close modal on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeAdjustModal();
+        function openEditModal(memberId, memberName, memberEmail) {
+            document.getElementById('edit_member_id').value = memberId;
+            document.getElementById('edit_name').value = memberName;
+            document.getElementById('edit_email').value = memberEmail;
+            document.getElementById('editModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('edit_name').focus(), 50);
         }
-    });
 
-    // Close modal on background click
-    document.getElementById('adjustModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAdjustModal();
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
         }
-    });
 
-    // ยืนยันลบสมาชิก
-    function confirmDelete(memberId, memberName, totalBookings) {
-        const bookingNote = totalBookings > 0
-            ? `<p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+
+        function openAdjustModal(memberId, memberName, currentPoints) {
+            document.getElementById('adjust_member_id').value = memberId;
+            document.getElementById('adjust_member_name').textContent = memberName;
+            document.getElementById('adjust_current_points').textContent = currentPoints.toLocaleString('th-TH');
+            document.getElementById('adjustModal').classList.remove('hidden');
+        }
+
+        function closeAdjustModal() {
+            document.getElementById('adjustModal').classList.add('hidden');
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeEditModal();
+                closeAdjustModal();
+            }
+        });
+
+        // Close modal on background click
+        document.getElementById('adjustModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeAdjustModal();
+            }
+        });
+
+        // ยืนยันลบสมาชิก
+        function confirmDelete(memberId, memberName, totalBookings) {
+            const bookingNote = totalBookings > 0
+                ? `<p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
                  ⚠️ สมาชิกนี้มีประวัติการจอง <b>${totalBookings} รายการ</b> — ข้อมูลการจองยังคงอยู่ แต่จะถูกยกเลิกความเป็นสมาชิก
                </p>`
-            : '';
+                : '';
 
-        Swal.fire({
-            title: 'ลบสมาชิก?',
-            html: `
+            Swal.fire({
+                title: 'ลบสมาชิก?',
+                html: `
                 <p class="text-gray-600">กำลังจะลบสมาชิก:</p>
                 <p class="font-bold text-gray-900 text-lg my-1">${memberName}</p>
                 <p class="text-xs text-gray-400">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
                 ${bookingNote}
             `,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'ใช่ ลบเลย',
-            cancelButtonText: 'ยกเลิก',
-            reverseButtons: true,
-            focusCancel: true,
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('delete_member_id').value = memberId;
-                document.getElementById('deleteForm').submit();
-            }
-        });
-    }
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ใช่ ลบเลย',
+                cancelButtonText: 'ยกเลิก',
+                reverseButtons: true,
+                focusCancel: true,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete_member_id').value = memberId;
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        }
     </script>
 </body>
+
 </html>
