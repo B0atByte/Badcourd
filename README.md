@@ -170,6 +170,12 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 
 ## Changelog
 
+### v1.3 — 2026-03-06
+- เพิ่ม SweetAlert2 ทั้งระบบ (toast สำเร็จ, popup error, dialog ยืนยันลบ/ยกเลิก)
+- สร้าง `includes/swal_flash.php` — shared utility สำหรับ flash messages ทุกหน้า
+- เพิ่ม SweetAlert2 CDN ใน `header.php` ให้ใช้ได้ทุกหน้าโดยไม่ต้องโหลดซ้ำ
+- อัปเดต 10 หน้า: courts, promotions, members, users, pricing, yoga_classes, yoga_packages, bookings/index, create, update
+
 ### v1.2 — 2026-03-06
 - เพิ่มฟีเจอร์เพิ่มสมาชิกด้วยตนเอง (ไม่ต้องรอผ่านการจอง)
 - แก้ `has_overlap()` จาก PHP loop เป็น SQL query (ประสิทธิภาพสูงขึ้นมาก)
