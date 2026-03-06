@@ -79,6 +79,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $error = 'ไม่สามารถลบสมาชิกได้: ' . $e->getMessage();
             }
         }
+    } elseif ($_POST['action'] === 'add_member') {
+        $phone = trim($_POST['phone'] ?? '');
+        $name  = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+
+        if (empty($phone) || empty($name)) {
+            $error = 'กรุณากรอกชื่อและเบอร์โทรศัพท์';
+        } elseif (!preg_match('/^0[0-9]{8,9}$/', $phone)) {
+            $error = 'เบอร์โทรศัพท์ไม่ถูกต้อง (9-10 หลัก ขึ้นต้นด้วย 0)';
+        } else {
+            // Check duplicate phone
+            $dup = $pdo->prepare("SELECT id FROM members WHERE phone = ?");
+            $dup->execute([$phone]);
+            if ($dup->fetch()) {
+                $error = 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
+            } else {
+                $pdo->prepare("
+                    INSERT INTO members (phone, name, email, points, total_bookings, total_spent, member_level, status)
+                    VALUES (?, ?, ?, 0, 0, 0, 'Bronze', 'active')
+                ")->execute([$phone, $name, $email ?: null]);
+                $success = 'เพิ่มสมาชิกเรียบร้อยแล้ว';
+            }
+        }
     }
 }
 
@@ -271,9 +294,19 @@ $levelColors = [
                         <span class="text-gray-400 text-xs">(กรองแล้ว)</span>
                     <?php endif; ?>
                 </span>
-                <?php if ($per_page > 0 && $totalPages > 1): ?>
-                    <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
-                <?php endif; ?>
+                <div class="flex items-center gap-3">
+                    <?php if ($per_page > 0 && $totalPages > 1): ?>
+                        <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
+                    <?php endif; ?>
+                    <button type="button" onclick="openAddModal()"
+                        style="background:#005691;"
+                        class="px-4 py-1.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        เพิ่มสมาชิก
+                    </button>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
@@ -405,6 +438,42 @@ $levelColors = [
 
     </div>
 
+    <!-- Add Member Modal -->
+    <div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">เพิ่มสมาชิกใหม่</h3>
+            <form method="post">
+                <input type="hidden" name="action" value="add_member">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                    <input type="tel" name="phone" required placeholder="0812345678"
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" required placeholder="ชื่อ-นามสกุล"
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal">(ไม่บังคับ)</span></label>
+                    <input type="email" name="email" placeholder="example@email.com"
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                </div>
+                <p class="text-xs text-gray-400 mb-4">ระดับเริ่มต้น: Bronze | แต้ม: 0 | สถานะ: Active</p>
+                <div class="flex gap-3">
+                    <button type="submit" style="background:#005691;"
+                        class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                        เพิ่มสมาชิก
+                    </button>
+                    <button type="button" onclick="closeAddModal()"
+                        class="flex-1 px-4 py-2.5 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Edit Member Modal -->
     <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
@@ -489,6 +558,19 @@ $levelColors = [
     </form>
 
     <script>
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+            setTimeout(() => document.querySelector('#addModal input[name="phone"]').focus(), 50);
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+        }
+
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) closeAddModal();
+        });
+
         function openEditModal(memberId, memberName, memberEmail) {
             document.getElementById('edit_member_id').value = memberId;
             document.getElementById('edit_name').value = memberName;
@@ -519,6 +601,7 @@ $levelColors = [
         // Close modal on escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
+                closeAddModal();
                 closeEditModal();
                 closeAdjustModal();
             }

@@ -61,18 +61,19 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
-// Stats
-$bookedCount = $pdo->prepare("SELECT COUNT(*) FROM bookings b JOIN courts c ON b.court_id=c.id WHERE $whereClause AND b.status='booked'");
-$bookedCount->execute($params);
-$bookedTotal = $bookedCount->fetchColumn();
-
-$cancelledCount = $pdo->prepare("SELECT COUNT(*) FROM bookings b JOIN courts c ON b.court_id=c.id WHERE $whereClause AND b.status='cancelled'");
-$cancelledCount->execute($params);
-$cancelledTotal = $cancelledCount->fetchColumn();
-
-$revenueStmt = $pdo->prepare("SELECT SUM(b.total_amount) FROM bookings b JOIN courts c ON b.court_id=c.id WHERE $whereClause AND b.status='booked'");
-$revenueStmt->execute($params);
-$totalRevenue = $revenueStmt->fetchColumn() ?? 0;
+// Stats (single query with conditional aggregation)
+$statsStmt = $pdo->prepare("
+    SELECT
+        SUM(CASE WHEN b.status='booked' THEN 1 ELSE 0 END) AS booked_total,
+        SUM(CASE WHEN b.status='cancelled' THEN 1 ELSE 0 END) AS cancelled_total,
+        SUM(CASE WHEN b.status='booked' THEN b.total_amount ELSE 0 END) AS total_revenue
+    FROM bookings b JOIN courts c ON b.court_id=c.id WHERE $whereClause
+");
+$statsStmt->execute($params);
+$stats = $statsStmt->fetch();
+$bookedTotal    = (int)($stats['booked_total'] ?? 0);
+$cancelledTotal = (int)($stats['cancelled_total'] ?? 0);
+$totalRevenue   = (float)($stats['total_revenue'] ?? 0);
 ?>
 <!doctype html>
 <html lang="th">

@@ -58,22 +58,27 @@ function pick_pricing_rule(DateTime $start, ?int $group_id = null): ?array {
 
 
 function has_overlap($court_id, DateTime $start, int $hours, $exclude_booking_id = null): bool {
-global $pdo;
-$end = clone $start; $end->modify("+{$hours} hour");
-$sql = "SELECT COUNT(*) AS c FROM bookings
-WHERE court_id = :cid AND status='booked'
-AND NOT( end_dt <= :s OR start_datetime >= :e )";
-// เราจะคำนวณ end_dt แบบ runtime
-$stmt = $pdo->prepare("SELECT id, start_datetime, duration_hours FROM bookings
-WHERE court_id = :cid AND status='booked'");
-$stmt->execute([':cid'=>$court_id]);
-while ($b = $stmt->fetch()) {
-if ($exclude_booking_id && (int)$b['id'] === (int)$exclude_booking_id) continue;
-$bs = new DateTime($b['start_datetime']);
-$be = (clone $bs)->modify("+".(int)$b['duration_hours']." hour");
-if (!($be <= $start || $bs >= $end)) return true; // overlap
-}
-return false;
+    global $pdo;
+    $end = (clone $start)->modify("+{$hours} hour");
+    $sql = "SELECT COUNT(*) FROM bookings
+            WHERE court_id = :cid
+              AND status = 'booked'
+              AND start_datetime < :end
+              AND DATE_ADD(start_datetime, INTERVAL duration_hours HOUR) > :start";
+    if ($exclude_booking_id) {
+        $sql .= " AND id != :excl";
+    }
+    $stmt = $pdo->prepare($sql);
+    $params = [
+        ':cid'   => (int) $court_id,
+        ':start' => $start->format('Y-m-d H:i:s'),
+        ':end'   => $end->format('Y-m-d H:i:s'),
+    ];
+    if ($exclude_booking_id) {
+        $params[':excl'] = (int) $exclude_booking_id;
+    }
+    $stmt->execute($params);
+    return (int) $stmt->fetchColumn() > 0;
 }
 
 
