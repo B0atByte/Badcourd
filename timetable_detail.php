@@ -93,7 +93,6 @@ foreach ($bookings as $b) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <title>ตารางคอร์ต – <?= htmlspecialchars($thaiDate) ?></title>
   <style>
     /* ---- Timeline table ---- */
@@ -277,10 +276,6 @@ foreach ($bookings as $b) {
         <span id="liveStatusText">กำลังโหลด...</span>
       </div>
       <?php endif; ?>
-      <button onclick="testAlert()"
-              class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-        ทดสอบแจ้งเตือน
-      </button>
     </div>
   </div>
 
@@ -858,8 +853,20 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 
 // ===================== Cancel Booking =====================
 function confirmCancel(e) {
-  if (!confirm('ยืนยันยกเลิกการจองนี้?')) { e.preventDefault(); return false; }
-  return true;
+  e.preventDefault();
+  const href = e.currentTarget ? e.currentTarget.href : (e.target ? e.target.href : null);
+  Swal.fire({
+    title: 'ยืนยันยกเลิกการจอง?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+  }).then(result => {
+    if (result.isConfirmed && href) window.location.href = href;
+  });
+  return false;
 }
 
 // ===================== Slip Upload =====================
@@ -1150,40 +1157,10 @@ const bkAlerts = [
     });
   }
 
-  // Expose for test button
-  window._checkAlertsNow = checkAlerts;
-
   checkAlerts();
   setInterval(checkAlerts, 30000);
 })();
 
-// ปุ่มทดสอบ (ทำงานได้ทุกวัน ไม่จำกัดเฉพาะวันนี้)
-window.testAlert = function() {
-  Swal.fire({
-    toast: true,
-    position: 'top-end',
-    icon: 'warning',
-    title: '<span style="font-size:15px;font-weight:700;">คอร์ต 2 ใกล้หมดเวลา</span>',
-    html: '<span style="font-size:13px;">ทดสอบ · เหลืออีก <b>5 นาที</b></span>',
-    showConfirmButton: false,
-    timer: 8000,
-    timerProgressBar: true,
-    background: '#fffbeb',
-    color: '#92400e',
-    iconColor: '#d97706',
-  });
-  setTimeout(() => {
-    Swal.fire({
-      icon: 'info',
-      title: 'คอร์ต 2 หมดเวลาแล้ว',
-      html: 'ลูกค้า <b>ทดสอบระบบ</b><br>เล่นครบเวลาแล้ว กรุณาเตรียมคอร์ตสำหรับรายถัดไป',
-      confirmButtonText: 'รับทราบ',
-      confirmButtonColor: '#005691',
-      timer: 15000,
-      timerProgressBar: true,
-    });
-  }, 3000);
-};
 <?php endif; ?>
 </script>
 </body>

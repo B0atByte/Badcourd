@@ -16,7 +16,7 @@ $today = date('Y-m-d');
 
 try {
     $stmt = $pdo->prepare("
-        SELECT id, code, name, discount_percent, start_date, end_date
+        SELECT id, code, name, discount_percent, discount_type, start_date, end_date
         FROM promotions
         WHERE code = ?
           AND is_active = 1
@@ -35,6 +35,7 @@ try {
                 'code' => $promo['code'],
                 'name' => $promo['name'],
                 'discount_percent' => (float) $promo['discount_percent'],
+                'discount_type' => $promo['discount_type'],
             ],
             'message' => 'พบโปรโมชั่น: ' . $promo['name'],
         ], JSON_UNESCAPED_UNICODE);

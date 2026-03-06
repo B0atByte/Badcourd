@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// ถ้า login อยู่แล้วให้ redirect ทันที
+if (isset($_SESSION['user'])) {
+    header('Location: /timetable_detail.php');
+    exit;
+}
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -153,7 +159,7 @@ function loginGetCourtName(array $c): string
                     <input type="password" name="password" required placeholder="กรอกรหัสผ่าน"
                         class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none transition-all text-sm">
                 </div>
-                <button type="submit" style="background:#FF0000;"
+                <button type="submit" style="background:#005691;"
                     class="w-full py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm mt-2">
                     เข้าสู่ระบบ
                 </button>

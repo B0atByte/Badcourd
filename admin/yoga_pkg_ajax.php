@@ -3,11 +3,7 @@
 require_once __DIR__ . '/../auth/guard.php';
 require_once __DIR__ . '/../config/db.php';
 
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['user'])) { http_response_code(403); echo json_encode(['error'=>'unauthorized']); exit; }
-
 header('Content-Type: application/json; charset=utf-8');
-$pdo->exec("SET NAMES utf8mb4");
 
 $phone = trim($_GET['phone'] ?? '');
 if (empty($phone)) { echo json_encode(['packages'=>[]]); exit; }

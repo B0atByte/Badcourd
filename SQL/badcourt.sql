@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql
--- Generation Time: Mar 02, 2026 at 10:18 AM
+-- Generation Time: Mar 06, 2026 at 08:46 AM
 -- Server version: 8.0.44
 -- PHP Version: 8.3.26
 
@@ -163,7 +163,8 @@ CREATE TABLE `members` (
 --
 
 INSERT INTO `members` (`id`, `phone`, `name`, `email`, `points`, `total_bookings`, `total_spent`, `member_level`, `joined_date`, `last_booking_date`, `birth_date`, `status`, `notes`) VALUES
-(5, '0111111111', '123', NULL, 1, 1, 150.00, 'Bronze', '2026-03-02 16:35:10', '2026-03-02 16:35:10', NULL, 'active', NULL);
+(5, '0111111111', '123', NULL, 801, 1, 150.00, 'Bronze', '2026-03-02 16:35:10', '2026-03-02 16:35:10', NULL, 'active', NULL),
+(6, '0639216822', 'พัฒนพงษ์ กิ่งจันทร์', NULL, 0, 0, 0.00, 'Bronze', '2026-03-06 14:26:11', NULL, NULL, 'active', NULL);
 
 -- --------------------------------------------------------
 
@@ -215,7 +216,9 @@ CREATE TABLE `point_transactions` (
 --
 
 INSERT INTO `point_transactions` (`id`, `member_id`, `booking_id`, `points`, `type`, `description`, `created_at`, `created_by`) VALUES
-(9, 5, 47, 1, 'earn', 'รับแต้มจากการจอง (฿150)', '2026-03-02 16:35:10', 5);
+(9, 5, 47, 1, 'earn', 'รับแต้มจากการจอง (฿150)', '2026-03-02 16:35:10', 5),
+(10, 5, NULL, 400, 'adjust', 'เพิ่ม', '2026-03-06 14:57:21', 5),
+(11, 5, NULL, 400, 'adjust', 'เพิ่ม', '2026-03-06 14:57:26', 5);
 
 -- --------------------------------------------------------
 
@@ -409,7 +412,10 @@ ALTER TABLE `bookings`
   ADD KEY `fk_bookings_court` (`court_id`),
   ADD KEY `fk_bookings_user` (`created_by`),
   ADD KEY `idx_member_id` (`member_id`),
-  ADD KEY `idx_promotion_id` (`promotion_id`);
+  ADD KEY `idx_promotion_id` (`promotion_id`),
+  ADD KEY `idx_overlap` (`court_id`,`status`,`start_datetime`),
+  ADD KEY `idx_start_datetime` (`start_datetime`),
+  ADD KEY `idx_customer_phone` (`customer_phone`(20));
 
 --
 -- Indexes for table `booking_logs`
@@ -434,7 +440,9 @@ ALTER TABLE `members`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `phone` (`phone`),
   ADD KEY `idx_phone` (`phone`),
-  ADD KEY `idx_level` (`member_level`);
+  ADD KEY `idx_level` (`member_level`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_level_status` (`member_level`,`status`);
 
 --
 -- Indexes for table `member_yoga_packages`
@@ -464,7 +472,8 @@ ALTER TABLE `pricing_groups`
 --
 ALTER TABLE `pricing_rules`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_pr_group` (`group_id`);
+  ADD KEY `fk_pr_group` (`group_id`),
+  ADD KEY `idx_price_lookup` (`group_id`,`day_type`,`start_time`,`end_time`);
 
 --
 -- Indexes for table `promotions`
@@ -531,7 +540,7 @@ ALTER TABLE `courts`
 -- AUTO_INCREMENT for table `members`
 --
 ALTER TABLE `members`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `member_yoga_packages`
@@ -543,7 +552,7 @@ ALTER TABLE `member_yoga_packages`
 -- AUTO_INCREMENT for table `point_transactions`
 --
 ALTER TABLE `point_transactions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `pricing_groups`

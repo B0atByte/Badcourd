@@ -1,6 +1,6 @@
 <?php
 // Shared SweetAlert2 flash + utility functions
-// Include AFTER <?php include header.php ?> on each page
+// Include AFTER header.php on each page
 // Reads $success and $error from the calling scope
 $_sf_success = isset($success) ? trim((string)$success) : '';
 $_sf_error   = isset($error)   ? trim((string)$error)   : '';
@@ -29,9 +29,10 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ยืนยันลบ — นำทางไปยัง URL เมื่อกด confirm
-function swalDelete(url, name) {
+// title (optional) ใช้กำหนดหัวข้อ dialog แทน default 'ยืนยันการลบ?'
+function swalDelete(url, name, title) {
     Swal.fire({
-        title: 'ยืนยันการลบ?',
+        title: title || 'ยืนยันการลบ?',
         html: name ? '<b>' + name + '</b>' : '',
         icon: 'warning',
         showCancelButton: true,

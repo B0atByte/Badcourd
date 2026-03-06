@@ -92,7 +92,7 @@ function getCourtDisplayName($court): string {
       </div>
       <?php else: ?>
       <a href="/auth/login.php"
-         style="background:#FF0000;"
+         style="background:#005691;"
          class="px-4 py-1.5 text-sm text-white rounded hover:opacity-90 transition-opacity">
         เข้าสู่ระบบ
       </a>
@@ -240,7 +240,7 @@ function getCourtDisplayName($court): string {
   <?php if (!$isLoggedIn): ?>
   <div class="mt-2 bg-white rounded-xl border border-gray-200 p-5 text-center">
     <p class="text-gray-500 text-sm mb-3">เข้าสู่ระบบเพื่อจัดการการจองและดูรายละเอียดเพิ่มเติม</p>
-    <a href="/auth/login.php" style="background:#FF0000;"
+    <a href="/auth/login.php" style="background:#005691;"
        class="inline-block px-6 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
       เข้าสู่ระบบ
     </a>

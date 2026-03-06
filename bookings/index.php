@@ -233,7 +233,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
              class="text-sm border border-[#E8F1F5] px-3 py-1 rounded hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
           <?php if($isBooked): ?>
           <button type="button"
-             onclick="swalDelete('cancel.php?id=<?=$r['id']?>', 'ยืนยันยกเลิกการจอง?')"
+             onclick="swalDelete('cancel.php?id=<?=$r['id']?>', '<?= htmlspecialchars($r['customer_name'], ENT_QUOTES) ?>', 'ยืนยันยกเลิกการจอง?')"
              class="text-sm border border-red-300 text-red-500 px-3 py-1 rounded hover:bg-red-50 transition-colors">ยกเลิก</button>
           <?php endif; ?>
         </div>
@@ -320,7 +320,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
                    class="px-3 py-1 border rounded text-xs hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
                 <?php if($isBooked): ?>
                 <button type="button"
-                   onclick="swalDelete('cancel.php?id=<?=$r['id']?>', 'ยืนยันยกเลิกการจอง?')"
+                   onclick="swalDelete('cancel.php?id=<?=$r['id']?>', '<?= htmlspecialchars($r['customer_name'], ENT_QUOTES) ?>', 'ยืนยันยกเลิกการจอง?')"
                    class="px-3 py-1 border border-red-300 text-red-500 rounded text-xs hover:bg-red-50 transition-colors">ยกเลิก</button>
                 <?php endif; ?>
               </div>

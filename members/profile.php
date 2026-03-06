@@ -1,16 +1,8 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
 require_once __DIR__ . '/../auth/guard.php';
+require_permission('members');
 require_once __DIR__ . '/../config/db.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!isset($_SESSION['user'])) {
-    header('Location: /auth/login.php');
-    exit;
-}
 
 // Get member ID
 $member_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

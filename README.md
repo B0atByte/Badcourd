@@ -170,6 +170,20 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 
 ## Changelog
 
+### v1.4 — 2026-03-06
+**Bug Fixes & Security**
+- แก้ `?>` ใน comment ของ `includes/swal_flash.php` ที่ทำให้ PHP code แสดงเป็น raw text ทุกหน้า
+- เพิ่ม `guard.php` ใน `members/check.php` (security: unauthenticated access)
+- เพิ่ม `require_permission('members')` ใน `members/profile.php`
+- แก้ปุ่มเข้าสู่ระบบสีแดง `#FF0000` → `#005691` ใน `timetable.php` (2 จุด) และ `auth/login.php`
+- เพิ่ม redirect ถ้า login อยู่แล้วใน `auth/login.php`
+- ลบ SweetAlert2 `<script>` ที่โหลดซ้ำใน `admin/members.php`, `admin/yoga_classes.php`, `admin/yoga_packages.php`, `timetable_detail.php`
+- แก้ `swalDelete()` ให้รองรับ parameter `title` แทนที่จะ hardcode
+- แก้ `bookings/index.php` — เรียก `swalDelete()` ผิด parameter
+- เพิ่ม `discount_type` ใน `bookings/create.php` และ `bookings/check_promotion.php` รองรับส่วนลดแบบ fixed บาท
+- ลบ debug button "ทดสอบแจ้งเตือน" และ `window.testAlert` ออกจาก `timetable_detail.php`
+- แก้ `confirmCancel()` ใน `timetable_detail.php` จาก native `confirm()` เป็น SweetAlert2
+
 ### v1.3 — 2026-03-06
 - เพิ่ม SweetAlert2 ทั้งระบบ (toast สำเร็จ, popup error, dialog ยืนยันลบ/ยกเลิก)
 - สร้าง `includes/swal_flash.php` — shared utility สำหรับ flash messages ทุกหน้า

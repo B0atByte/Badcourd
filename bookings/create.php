@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $applied_promotion_id = null;
         $applied_promo_percent = 0.0;
         if ($promotion_id) {
-            $promoCheck = $pdo->prepare("SELECT id, name, discount_percent FROM promotions WHERE id = ? AND is_active = 1 AND start_date <= ? AND end_date >= ?");
+            $promoCheck = $pdo->prepare("SELECT id, name, discount_percent, discount_type FROM promotions WHERE id = ? AND is_active = 1 AND start_date <= ? AND end_date >= ?");
             $promoCheck->execute([$promotion_id, $start->format('Y-m-d'), $start->format('Y-m-d')]);
             $promoRow = $promoCheck->fetch();
             if ($promoRow) {
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $applied_promo_percent = (float) $promoRow['discount_percent'];
             }
         } elseif (!empty($promo_code_input)) {
-            $promoCheck = $pdo->prepare("SELECT id, name, discount_percent FROM promotions WHERE code = ? AND is_active = 1 AND start_date <= ? AND end_date >= ?");
+            $promoCheck = $pdo->prepare("SELECT id, name, discount_percent, discount_type FROM promotions WHERE code = ? AND is_active = 1 AND start_date <= ? AND end_date >= ?");
             $promoCheck->execute([$promo_code_input, $start->format('Y-m-d'), $start->format('Y-m-d')]);
             $promoRow = $promoCheck->fetch();
             if ($promoRow) {
@@ -501,10 +501,11 @@ function getCourtDisplayName($court)
                                         <option value="">— ไม่ใช้โปรโมชั่น —</option>
                                         <?php foreach ($activePromos as $p): ?>
                                             <option value="<?= $p['id'] ?>" data-percent="<?= $p['discount_percent'] ?>"
+                                                data-type="<?= htmlspecialchars($p['discount_type'], ENT_QUOTES) ?>"
                                                 data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
                                                 data-code="<?= htmlspecialchars($p['code'], ENT_QUOTES) ?>"
                                                 <?= $posted_promotion_id == $p['id'] ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($p['name']) ?> (<?= $p['discount_percent'] ?>%)
+                                                <?= htmlspecialchars($p['name']) ?> (<?= $p['discount_type'] === 'fixed' ? '฿' . number_format($p['discount_percent'], 0) : $p['discount_percent'] . '%' ?>)
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -683,7 +684,12 @@ function getCourtDisplayName($court)
 
             // Promo overrides member discount; fallback to member discount if no promo
             if (currentPromoData && currentPromoData.discount_percent > 0) {
-                const promoDiscount = Math.floor(subtotal * currentPromoData.discount_percent / 100);
+                let promoDiscount;
+                if (currentPromoData.discount_type === 'fixed') {
+                    promoDiscount = Math.min(currentPromoData.discount_percent, subtotal);
+                } else {
+                    promoDiscount = Math.floor(subtotal * currentPromoData.discount_percent / 100);
+                }
                 document.getElementById('discountInput').value = promoDiscount;
                 discount = promoDiscount;
             } else if (currentMemberData && currentMemberData.discount_percent > 0) {
@@ -736,6 +742,7 @@ function getCourtDisplayName($court)
                     id: parseInt(select.value),
                     name: selected.getAttribute('data-name'),
                     discount_percent: parseFloat(selected.getAttribute('data-percent')),
+                    discount_type: selected.getAttribute('data-type') || 'percent',
                     code: selected.getAttribute('data-code')
                 };
                 showPromoInfo(currentPromoData.name, currentPromoData.discount_percent);
@@ -759,6 +766,7 @@ function getCourtDisplayName($court)
                             id: data.promotion.id,
                             name: data.promotion.name,
                             discount_percent: data.promotion.discount_percent,
+                            discount_type: data.promotion.discount_type || 'percent',
                             code: data.promotion.code
                         };
                         showPromoInfo(data.promotion.name, data.promotion.discount_percent);
