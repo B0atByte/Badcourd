@@ -147,10 +147,12 @@ $promotions = $pStmt->fetchAll();
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
   <title>จัดการโปรโมชั่น - BARGAIN SPORT</title>
+
 </head>
 
 <body style="background:#FAFAFA;" class="min-h-screen">
   <?php include __DIR__ . '/../includes/header.php'; ?>
+  <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
   <div class="max-w-6xl mx-auto px-4 py-8">
 
@@ -159,15 +161,6 @@ $promotions = $pStmt->fetchAll();
       <h1 style="color:#005691;" class="text-2xl font-bold">จัดการโปรโมชั่น</h1>
       <p class="text-gray-500 text-sm mt-0.5">Admin Panel · กำหนดส่วนลด % สำหรับการจอง</p>
     </div>
-
-    <!-- Flash messages -->
-    <?php if ($success): ?>
-      <div class="mb-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm"><?= $success ?>
-      </div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm"><?= $error ?></div>
-    <?php endif; ?>
 
     <!-- Stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -355,11 +348,11 @@ $promotions = $pStmt->fetchAll();
                 class="flex-1 py-1.5 border text-xs rounded text-center hover:bg-[#FAFAFA] transition-colors">
                 <?= $p['is_active'] ? 'ปิดใช้งาน' : 'เปิดใช้งาน' ?>
               </a>
-              <a href="?delete=<?= $p['id'] ?>" onclick="return confirm('ยืนยันลบโปรโมชั่น \"
-                <?= htmlspecialchars($p['name'], ENT_QUOTES) ?>\"?')"
+              <button type="button"
+                onclick="swalDelete('?delete=<?= $p['id'] ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>')"
                 class="flex-1 py-1.5 border border-red-200 text-red-500 text-xs rounded text-center hover:bg-red-50 transition-colors">
                 ลบ
-              </a>
+              </button>
             </div>
           </div>
         <?php endforeach; ?>
@@ -427,11 +420,11 @@ $promotions = $pStmt->fetchAll();
                       class="px-3 py-1.5 border text-xs rounded hover:bg-[#FAFAFA] transition-colors">
                       <?= $p['is_active'] ? 'ปิด' : 'เปิด' ?>
                     </a>
-                    <a href="?delete=<?= $p['id'] ?>" onclick="return confirm('ยืนยันลบโปรโมชั่น \"
-                      <?= htmlspecialchars($p['name'], ENT_QUOTES) ?>\"?')"
+                    <button type="button"
+                      onclick="swalDelete('?delete=<?= $p['id'] ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>')"
                       class="px-3 py-1.5 border border-red-200 text-red-500 text-xs rounded hover:bg-red-50 transition-colors">
                       ลบ
-                    </a>
+                    </button>
                   </div>
                 </td>
               </tr>

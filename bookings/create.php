@@ -324,24 +324,13 @@ function getCourtDisplayName($court)
 
 <body style="background:#FAFAFA;" class="min-h-screen">
     <?php include __DIR__ . '/../includes/header.php'; ?>
+    <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
     <div class="max-w-5xl mx-auto px-4 py-8">
 
         <div class="mb-6">
             <h1 style="color:#005691;" class="text-2xl font-bold">จองคอร์ตแบดมินตัน</h1>
         </div>
-
-        <?php if ($success): ?>
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                <?= htmlspecialchars($success) ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($error): ?>
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                <?= htmlspecialchars($error) ?>
-            </div>
-        <?php endif; ?>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

@@ -158,6 +158,7 @@ function timelineSlots(array $rules, string $day_type): array
 
 <body style="background:#FAFAFA;" class="min-h-screen">
   <?php include __DIR__ . '/../includes/header.php'; ?>
+  <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
   <div class="max-w-7xl mx-auto px-4 py-6">
 
@@ -179,16 +180,6 @@ function timelineSlots(array $rules, string $day_type): array
         สร้างกลุ่มราคาใหม่
       </button>
     </div>
-
-    <!-- Flash -->
-    <?php if ($success): ?>
-      <div class="mb-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm">
-        <?= htmlspecialchars($success) ?></div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
-        <?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
 
     <!-- New group panel (collapsible) -->
     <div id="newGroupPanel"
@@ -326,15 +317,15 @@ function timelineSlots(array $rules, string $day_type): array
                     <?php endif; ?>
                   </p>
                 </div>
-                <a href="?delete_group=<?= $group_id ?>&tab=global"
-                  onclick="return confirm('ลบกลุ่ม &quot;<?= htmlspecialchars($groupName, ENT_QUOTES) ?>&quot;?\nกฎจะกลายเป็น Global\nคอร์ตที่ใช้จะถูก reset')"
+                <button type="button"
+                  onclick="swalDelete('?delete_group=<?= $group_id ?>&tab=global', 'ลบกลุ่ม &quot;<?= htmlspecialchars($groupName, ENT_QUOTES) ?>&quot;? กฎจะกลายเป็น Global')"
                   class="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-500 border border-red-200 text-xs rounded-lg hover:bg-red-100 transition-colors">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   ลบกลุ่มนี้
-                </a>
+                </button>
               </div>
             <?php else: ?>
               <div class="mb-5">
@@ -448,14 +439,14 @@ function timelineSlots(array $rules, string $day_type): array
                               </span>
                             </td>
                             <td class="px-4 py-2.5 text-center">
-                              <a href="?delete=<?= $r['id'] ?>&tab=<?= $tabId ?>"
-                                onclick="return confirm('ลบกฎ <?= $isWe ? 'เสาร์–อาทิตย์' : 'จันทร์–ศุกร์' ?> <?= substr($r['start_time'], 0, 5) ?>–<?= substr($r['end_time'], 0, 5) ?>?')"
+                              <button type="button"
+                                onclick="swalDelete('?delete=<?= $r['id'] ?>&tab=<?= $tabId ?>', 'ลบกฎ <?= $isWe ? 'เสาร์–อาทิตย์' : 'จันทร์–ศุกร์' ?> <?= substr($r['start_time'], 0, 5) ?>–<?= substr($r['end_time'], 0, 5) ?>?')"
                                 class="text-gray-300 hover:text-red-400 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                              </a>
+                              </button>
                             </td>
                           </tr>
                         <?php endforeach; ?>

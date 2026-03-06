@@ -82,9 +82,16 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.tailwindcss.com"></script>
 <title>การจอง - BARGAIN SPORT</title>
+
 </head>
 <body style="background:#FAFAFA;" class="min-h-screen">
 <?php include __DIR__.'/../includes/header.php'; ?>
+<?php
+  $success = $error = '';
+  if (isset($_GET['msg']) && $_GET['msg'] === 'cancelled') $success = 'ยกเลิกการจองเรียบร้อยแล้ว';
+  if (isset($_GET['err']) && $_GET['err'] === 'not_found')  $error   = 'ไม่พบการจองนี้ หรือถูกยกเลิกแล้ว';
+  include __DIR__.'/../includes/swal_flash.php';
+?>
 
 <div class="max-w-7xl mx-auto px-4 py-8">
 
@@ -225,9 +232,9 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
              style="color:#004A7C;"
              class="text-sm border border-[#E8F1F5] px-3 py-1 rounded hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
           <?php if($isBooked): ?>
-          <a href="cancel.php?id=<?=$r['id']?>"
-             onclick="return confirm('ยืนยันยกเลิกการจอง?')"
-             class="text-sm border border-red-300 text-red-500 px-3 py-1 rounded hover:bg-red-50 transition-colors">ยกเลิก</a>
+          <button type="button"
+             onclick="swalDelete('cancel.php?id=<?=$r['id']?>', 'ยืนยันยกเลิกการจอง?')"
+             class="text-sm border border-red-300 text-red-500 px-3 py-1 rounded hover:bg-red-50 transition-colors">ยกเลิก</button>
           <?php endif; ?>
         </div>
       </div>
@@ -312,9 +319,9 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
                    style="color:#004A7C; border-color:#E8F1F5;"
                    class="px-3 py-1 border rounded text-xs hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
                 <?php if($isBooked): ?>
-                <a href="cancel.php?id=<?=$r['id']?>"
-                   onclick="return confirm('ยืนยันยกเลิกการจอง?')"
-                   class="px-3 py-1 border border-red-300 text-red-500 rounded text-xs hover:bg-red-50 transition-colors">ยกเลิก</a>
+                <button type="button"
+                   onclick="swalDelete('cancel.php?id=<?=$r['id']?>', 'ยืนยันยกเลิกการจอง?')"
+                   class="px-3 py-1 border border-red-300 text-red-500 rounded text-xs hover:bg-red-50 transition-colors">ยกเลิก</button>
                 <?php endif; ?>
               </div>
             </td>

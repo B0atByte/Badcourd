@@ -84,6 +84,7 @@ $court = $courtStmt->fetch();
 
 <body style="background:#FAFAFA;" class="min-h-screen">
     <?php include __DIR__ . '/../includes/header.php'; ?>
+    <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
     <div class="max-w-3xl mx-auto px-4 py-8">
 
@@ -92,17 +93,6 @@ $court = $courtStmt->fetch();
             <p class="text-gray-500 text-sm mt-0.5">แก้ไขวันที่และเวลาการจอง</p>
         </div>
 
-        <?php if ($success): ?>
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                <?= htmlspecialchars($success) ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($error): ?>
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                <?= htmlspecialchars($error) ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Booking Info -->
         <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">

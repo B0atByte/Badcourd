@@ -173,6 +173,7 @@ $stats = $pdo->query("
 
 <body style="background:#f8fafc;" class="min-h-screen">
   <?php include __DIR__ . '/../includes/header.php'; ?>
+  <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
   <div class="max-w-7xl mx-auto px-4 py-6">
 
@@ -200,17 +201,6 @@ $stats = $pdo->query("
       </div>
     </div>
 
-    <!-- Messages -->
-    <?php if ($success): ?>
-      <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">✅
-        <?= htmlspecialchars($success) ?>
-      </div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">❌
-        <?= htmlspecialchars($error) ?>
-      </div>
-    <?php endif; ?>
 
     <!-- ── Stats ── -->
     <div class="grid grid-cols-3 gap-4 mb-5">

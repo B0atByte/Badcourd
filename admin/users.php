@@ -153,6 +153,7 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
 
 <body style="background:#f8fafc;" class="min-h-screen">
   <?php include __DIR__ . '/../includes/header.php'; ?>
+  <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
   <div class="max-w-6xl mx-auto px-4 py-8">
 
@@ -166,17 +167,6 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
         class="px-4 py-2 text-sm text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
         style="background:#005691;">+ เพิ่มผู้ใช้</button>
     </div>
-
-    <?php if ($success): ?>
-      <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
-        <?= htmlspecialchars($success) ?>
-      </div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
-        <?= htmlspecialchars($error) ?>
-      </div>
-    <?php endif; ?>
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-4 mb-6">
@@ -293,11 +283,11 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
                   </a>
                   <!-- Delete -->
                   <?php if (!$isSelf): ?>
-                    <a href="?delete=<?= $u['id'] ?>"
-                      onclick="return confirm('ลบผู้ใช้ <?= htmlspecialchars($u['username']) ?>?')"
+                    <button type="button"
+                      onclick="swalDelete('?delete=<?= $u['id'] ?>', '<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>')"
                       class="px-2.5 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50 transition-colors">
                       ลบ
-                    </a>
+                    </button>
                   <?php endif; ?>
                 </div>
               </td>

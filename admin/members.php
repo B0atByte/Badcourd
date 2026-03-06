@@ -190,6 +190,7 @@ $levelColors = [
 
 <body style="background:#FAFAFA;" class="min-h-screen">
     <?php include __DIR__ . '/../includes/header.php'; ?>
+    <?php include __DIR__ . '/../includes/swal_flash.php'; ?>
 
     <div class="max-w-7xl mx-auto px-4 py-8">
 
@@ -198,19 +199,6 @@ $levelColors = [
             <h1 style="color:#005691;" class="text-2xl font-bold mb-2">จัดการสมาชิก</h1>
             <p class="text-gray-600 text-sm">จัดการข้อมูลสมาชิกและแต้มสะสม</p>
         </div>
-
-        <!-- Messages -->
-        <?php if ($success): ?>
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                <?= htmlspecialchars($success) ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($error): ?>
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                <?= htmlspecialchars($error) ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Stats -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

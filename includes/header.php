@@ -6,6 +6,7 @@ $_isAdmin = !empty($_SESSION['user']) && $_SESSION['user']['role'] === 'admin';
 $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['username'] ?? 'ผู้ใช้');
 ?>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
   * {

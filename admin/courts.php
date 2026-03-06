@@ -230,31 +230,20 @@ function toggleCourtTypeScript()
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
   <title>จัดการคอร์ต - BARGAIN SPORT</title>
+
   <script><?= toggleCourtTypeScript() ?></script>
 </head>
 
 <body style="background:#FAFAFA;" class="min-h-screen">
   <?php include __DIR__ . '/../includes/header.php'; ?>
+  <?php
+    if (isset($_GET['success']))  $success = 'เพิ่มคอร์ตเรียบร้อยแล้ว';
+    if (isset($_GET['updated']))  $success = 'อัปเดตข้อมูลคอร์ตเรียบร้อยแล้ว';
+    if (isset($_GET['deleted']))  $success = 'ลบคอร์ตออกจากระบบแล้ว';
+    include __DIR__ . '/../includes/swal_flash.php';
+  ?>
 
   <div class="max-w-7xl mx-auto px-4 py-8">
-
-    <!-- Alerts -->
-    <?php if (isset($_GET['success'])): ?>
-      <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-5 text-sm">
-        เพิ่มคอร์ตเรียบร้อยแล้ว</div>
-    <?php endif; ?>
-    <?php if (isset($_GET['updated'])): ?>
-      <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg mb-5 text-sm">
-        อัพเดทข้อมูลเรียบร้อยแล้ว</div>
-    <?php endif; ?>
-    <?php if (isset($_GET['deleted'])): ?>
-      <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-5 text-sm">ลบคอร์ตออกจากระบบแล้ว
-      </div>
-    <?php endif; ?>
-    <?php if (isset($error)): ?>
-      <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-5 text-sm">
-        <?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
 
     <!-- Header + Add Form -->
     <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
@@ -533,11 +522,11 @@ function toggleCourtTypeScript()
                         class="px-3 py-1.5 text-white text-xs rounded hover:opacity-90 transition-opacity">
                         บันทึก
                       </button>
-                      <a href="?delete=<?= $c['id'] ?>"
-                        onclick="return confirm('ยืนยันลบ <?= htmlspecialchars($displayName) ?>?')"
+                      <button type="button"
+                        onclick="swalDelete('?delete=<?= $c['id'] ?>', '<?= htmlspecialchars($displayName, ENT_QUOTES) ?>')"
                         class="px-3 py-1.5 bg-red-50 text-red-500 border border-red-200 text-xs rounded hover:bg-red-100 transition-colors">
                         ลบ
-                      </a>
+                      </button>
                     </form>
                   </td>
                 </tr>
