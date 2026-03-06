@@ -10,19 +10,19 @@
 |---|---|
 | Backend | PHP 8.1+ |
 | Database | MySQL 8.0 |
-| Frontend | Tailwind CSS (CDN) |
+| Frontend | Tailwind CSS (CDN), SweetAlert2 |
 | Runtime | Docker / Docker Compose |
-| Library | SweetAlert2, PhpSpreadsheet |
+| Library | PhpSpreadsheet |
 
 ---
 
 ## Features
 
-### 🏸 ระบบจองคอร์ตแบดมินตัน
+### ระบบจองคอร์ตแบดมินตัน
 
 **การจอง**
 - จองคอร์ตปกติและห้อง VIP
-- ตรวจสอบการซ้อนทับเวลาอัตโนมัติ
+- ตรวจสอบการซ้อนทับเวลาอัตโนมัติ (SQL overlap query)
 - อัปโหลดสลิปการชำระเงิน (JPG / PNG / WebP สูงสุด 10MB)
 - แก้ไข / เลื่อน / ยกเลิกการจอง
 
@@ -37,6 +37,7 @@
 - Priority: กลุ่มราคา > ราคาคงที่ > ราคา Global
 
 **สมาชิก**
+- เพิ่มสมาชิกได้โดยตรง หรืออัตโนมัติเมื่อจองสำเร็จ
 - ระดับ Bronze / Silver / Gold / Platinum
 - ส่วนลดตามระดับ (0% / 5% / 10% / 15%)
 - ติดตาม Points, จำนวนจอง, ยอดใช้จ่าย
@@ -48,7 +49,7 @@
 
 ---
 
-### 🧘 ระบบคลาสโยคะ (ใหม่)
+### ระบบคลาสโยคะ
 
 **จัดการคลาส** (`admin/yoga_classes.php`)
 - ดูตารางคลาสรายวัน พร้อม navigation ย้อน/ไปหน้า
@@ -56,22 +57,16 @@
 - เพิ่มนักเรียนเข้าคลาส — ค้นหาจากเบอร์โทรเพื่อดึงแพ็กเกจอัตโนมัติ
 - เช็คชื่อเข้าเรียน (attended) — หักครั้งจากแพ็กเกจทันที
 - ยกเลิกการจอง — คืนครั้งให้แพ็กเกจหากเคยเช็คแล้ว
-- ลบคลาส
 
 **จัดการแพ็กเกจ** (`admin/yoga_packages.php`)
 - CRUD ประเภทแพ็กเกจ (เพิ่ม / แก้ไข / เปิด-ปิด / ลบ)
 - ขายแพ็กเกจให้สมาชิก พร้อมกำหนดวันหมดอายุอัตโนมัติ
-- ตรวจสอบครั้งที่เหลือ / สถานะแพ็กเกจ (active / expired / empty)
-- ค้นหาสมาชิกจากชื่อหรือเบอร์โทร
-
-**Package Logic**
 - รองรับครั้งโบนัส (เช่น 10+2 = 12 ครั้ง)
-- กำหนดอายุแพ็กเกจ (validity_days) หรือไม่มีวันหมดอายุ
-- ป้องกันลบประเภทแพ็กเกจที่มีสมาชิกใช้งาน
+- ตรวจสอบครั้งที่เหลือ / สถานะแพ็กเกจ (active / expired / empty)
 
 ---
 
-### 🔧 Admin
+### Admin
 
 - จัดการคอร์ต, ราคา, สมาชิก, โปรโมชั่น, ผู้ใช้ระบบ
 - จัดการคลาสโยคะ & แพ็กเกจ
@@ -95,12 +90,25 @@ docker compose up -d
 docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/badcourt.sql
 ```
 
-**3. เข้าใช้งาน**
+**3. รัน Index Migration (ครั้งแรก)**
+
+```bash
+docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.sql
+```
+
+**4. เข้าใช้งาน**
 
 | Service | URL |
 |---|---|
 | ระบบหลัก | http://localhost:8085 |
 | phpMyAdmin | http://localhost:8081 |
+
+**Default Login**
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | admin | (ตั้งเอง) |
+| User | user | (ตั้งเอง) |
 
 ---
 
@@ -110,18 +118,22 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/badcourt.sql
 /
 ├── admin/
 │   ├── courts.php          จัดการคอร์ต
-│   ├── members.php         จัดการสมาชิก
+│   ├── members.php         จัดการสมาชิก (เพิ่ม/แก้ไข/ลบ/ปรับแต้ม)
+│   ├── pricing.php         จัดการราคา
 │   ├── promotions.php      โปรโมชั่น
-│   ├── yoga_classes.php    จัดการคลาสโยคะ  ← ใหม่
-│   ├── yoga_packages.php   จัดการแพ็กเกจโยคะ  ← ใหม่
-│   └── yoga_pkg_ajax.php   AJAX ค้นหาแพ็กเกจ  ← ใหม่
+│   ├── users.php           จัดการผู้ใช้ระบบ
+│   ├── yoga_classes.php    จัดการคลาสโยคะ
+│   ├── yoga_packages.php   จัดการแพ็กเกจโยคะ
+│   └── yoga_pkg_ajax.php   AJAX ค้นหาแพ็กเกจ
 ├── auth/                   login, logout, guard middleware
-├── bookings/               create, index, update, cancel, AJAX
+├── bookings/               create, index, update, cancel, AJAX endpoints
 ├── config/                 db.php (PDO connection)
-├── includes/               header, footer, helpers
+├── includes/               header, footer, helpers, pagination
 ├── members/                ค้นหาและดูโปรไฟล์สมาชิก
 ├── reports/                export Excel
-├── SQL/                    migration files
+├── SQL/
+│   ├── badcourt.sql        schema + seed data
+│   └── add_indexes.sql     performance indexes
 ├── uploads/slips/          ไฟล์สลิปที่อัปโหลด
 ├── timetable.php           ตารางสาธารณะ
 └── timetable_detail.php    ตารางพร้อมรายละเอียด
@@ -145,7 +157,7 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/badcourt.sql
 | booking_logs | log การเปลี่ยนแปลงการจอง |
 | point_transactions | ประวัติ points สมาชิก |
 
-### Yoga (ใหม่)
+### Yoga
 
 | Table | Description |
 |---|---|
@@ -158,18 +170,20 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/badcourt.sql
 
 ## Changelog
 
+### v1.2 — 2026-03-06
+- เพิ่มฟีเจอร์เพิ่มสมาชิกด้วยตนเอง (ไม่ต้องรอผ่านการจอง)
+- แก้ `has_overlap()` จาก PHP loop เป็น SQL query (ประสิทธิภาพสูงขึ้นมาก)
+- รวม stats queries 3 อันเป็น 1 conditional aggregation query
+- เพิ่ม 6 performance indexes สำหรับรองรับข้อมูลจำนวนมาก
+
 ### v1.1 — 2026-03-02
-- ✨ เพิ่มระบบคลาสโยคะ (CRUD คลาส, เพิ่มนักเรียน, เช็คชื่อ)
-- ✨ เพิ่มระบบ Package Management (เพิ่ม/แก้ไข/ลบ ประเภทแพ็กเกจ)
-- ✨ ขายแพ็กเกจ + ตัด/คืนครั้งอัตโนมัติ
-- 🐛 แก้ `session_start()` ซ้ำใน yoga_classes.php
-- 🐛 แก้ encoding ภาษาไทยใน MySQL ENUM → VARCHAR
-- 🐛 แก้ NULL value ใน admin/members.php stats
-- 💄 ลบ emoji icon ที่ไม่จำเป็นออกจาก UI
-- 🔧 เพิ่มเมนู คลาสโยคะ / แพ็กเกจโยคะ ใน header
+- เพิ่มระบบคลาสโยคะ (CRUD คลาส, เพิ่มนักเรียน, เช็คชื่อ)
+- เพิ่มระบบ Package Management (เพิ่ม/แก้ไข/ลบ ประเภทแพ็กเกจ)
+- ขายแพ็กเกจ + ตัด/คืนครั้งอัตโนมัติ
+- เพิ่มเมนู คลาสโยคะ / แพ็กเกจโยคะ ใน header
 
 ### v1.0 — 2026-02-25
-- 🎉 Initial release: ระบบจองคอร์ตแบดมินตันเต็มรูปแบบ
+- Initial release: ระบบจองคอร์ตแบดมินตันเต็มรูปแบบ
 
 ---
 
