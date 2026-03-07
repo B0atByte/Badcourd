@@ -4,9 +4,38 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 $_isAdmin = !empty($_SESSION['user']) && $_SESSION['user']['role'] === 'admin';
 $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['username'] ?? 'ผู้ใช้');
+
+// โหลด site settings (logo, favicon, ชื่อเว็บ)
+$_siteName    = 'BARGAIN SPORT';
+$_siteLogo    = '/logo/BPL.png';
+$_siteFavicon = '/logo/BPL.png';
+try {
+  if (!isset($pdo)) {
+    require_once __DIR__ . '/../config/db.php';
+  }
+  $_stRows = $pdo->query("SELECT setting_key, setting_value FROM site_settings")->fetchAll(PDO::FETCH_ASSOC);
+  $_st = [];
+  foreach ($_stRows as $_r) {
+    $_st[$_r['setting_key']] = $_r['setting_value'];
+  }
+  $_siteName    = $_st['site_name']    ?? $_siteName;
+  $_siteLogo    = $_st['site_logo']    ?? $_siteLogo;
+  $_siteFavicon = $_st['site_favicon'] ?? $_siteFavicon;
+} catch (Exception $_e) {
+  // ใช้ค่า default ถ้า table ยังไม่มี
+}
 ?>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// อัปเดต favicon ให้ตรงกับ favicon จาก settings (แยกจาก logo)
+(function(){
+  var favicon = '<?= htmlspecialchars(addslashes($_siteFavicon)) ?>';
+  var lk = document.querySelector("link[rel*='icon']");
+  if (!lk) { lk = document.createElement('link'); lk.rel = 'icon'; document.head.appendChild(lk); }
+  lk.href = favicon + '?v=' + Date.now();
+})();
+</script>
 
 <style>
   * {
@@ -149,8 +178,9 @@ $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['us
 
       <!-- Logo -->
       <a href="/" class="flex items-center gap-2 shrink-0">
-        <img src="/logo/BPL.png" alt="BPL" class="w-8 h-8 object-contain rounded">
-        <span class="text-white font-semibold text-base">BARGAIN SPORT</span>
+        <img src="<?= htmlspecialchars($_siteLogo) ?>?v=<?= time() ?>" alt="Logo"
+          style="width:42px;height:42px;object-fit:contain;border-radius:6px;">
+        <span class="text-white font-semibold text-base"><?= htmlspecialchars($_siteName) ?></span>
       </a>
 
       <!-- Desktop Menu -->
@@ -175,7 +205,7 @@ $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['us
         <!-- Admin dropdown -->
         <?php
         // แสดง dropdown ถ้าเป็น admin หรือ user ที่มีสิทธิ์อย่างน้อย 1 อย่าง
-        $managePagesCheck = ['courts', 'members', 'yoga_classes', 'yoga_packages', 'promotions', 'reports', 'pricing', 'users'];
+        $managePagesCheck = ['courts', 'members', 'yoga_classes', 'yoga_packages', 'badminton_packages', 'promotions', 'reports', 'pricing', 'users'];
         $hasAnyManagePerm = $_isAdmin || (function () use ($managePagesCheck) {
           foreach ($managePagesCheck as $p) {
             if (can($p))
@@ -240,6 +270,15 @@ $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['us
                   แพ็กเกจโยคะ
                 </a>
               <?php endif; ?>
+              <?php if (can('badminton_packages')): ?>
+                <a href="/admin/badminton_packages.php">
+                  <svg class="dd-icon w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  </svg>
+                  แพ็กเกจแบดมินตัน
+                </a>
+              <?php endif; ?>
               <?php if (can('promotions') || can('reports') || can('pricing')): ?>
                 <div class="dd-sep"></div>
               <?php endif; ?>
@@ -285,6 +324,17 @@ $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['us
                       d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                   </svg>
                   ผู้ใช้งาน
+                </a>
+              <?php endif; ?>
+              <?php if ($_isAdmin): ?>
+                <div class="dd-sep"></div>
+                <a href="/admin/settings.php">
+                  <svg class="dd-icon w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  การตั้งค่า
                 </a>
               <?php endif; ?>
             </div>
@@ -394,6 +444,10 @@ $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['us
             <a href="/admin/yoga_packages.php"
               class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">แพ็กเกจโยคะ</a>
           <?php endif; ?>
+          <?php if (can('badminton_packages')): ?>
+            <a href="/admin/badminton_packages.php"
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">แพ็กเกจแบดมินตัน</a>
+          <?php endif; ?>
           <?php if (can('reports')): ?>
             <a href="/reports/export_excel.php"
               class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">รายงานแบดมินตัน</a>
@@ -407,6 +461,10 @@ $_username = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['us
           <?php if (can('users')): ?>
             <a href="/admin/users.php"
               class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">ผู้ใช้งาน</a>
+          <?php endif; ?>
+          <?php if ($_isAdmin): ?>
+            <a href="/admin/settings.php"
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">การตั้งค่า</a>
           <?php endif; ?>
         </div>
       <?php endif; ?>

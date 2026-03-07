@@ -17,7 +17,8 @@
       "Bash(wc:*)",
       "Bash(test:*)",
       "Bash(docker exec:*)",
-      "Bash(timeout 30 bash:*)"
+      "Bash(timeout 30 bash:*)",
+      "Bash(grep:*)"
     ]
   }
 }

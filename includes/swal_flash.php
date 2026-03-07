@@ -28,12 +28,14 @@ document.addEventListener('DOMContentLoaded', function () {
     <?php endif; ?>
 });
 
-// ยืนยันลบ — นำทางไปยัง URL เมื่อกด confirm
-// title (optional) ใช้กำหนดหัวข้อ dialog แทน default 'ยืนยันการลบ?'
-function swalDelete(url, name, title) {
+// ยืนยันลบ — รองรับ 2 รูปแบบ:
+//   รูปแบบ A (callback): swalDelete(title, text, callbackFn)
+//   รูปแบบ B (redirect): swalDelete(url, name, titleText)
+function swalDelete(titleOrUrl, textOrName, callbackOrTitle) {
+    var isCallback = (typeof callbackOrTitle === 'function');
     Swal.fire({
-        title: title || 'ยืนยันการลบ?',
-        html: name ? '<b>' + name + '</b>' : '',
+        title: isCallback ? titleOrUrl : (callbackOrTitle || 'ยืนยันการลบ?'),
+        html: textOrName ? '<b>' + textOrName + '</b>' : '',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -43,7 +45,13 @@ function swalDelete(url, name, title) {
         reverseButtons: true,
         focusCancel: true,
     }).then(function (result) {
-        if (result.isConfirmed) window.location.href = url;
+        if (result.isConfirmed) {
+            if (isCallback) {
+                callbackOrTitle();
+            } else {
+                window.location.href = titleOrUrl;
+            }
+        }
     });
 }
 

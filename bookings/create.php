@@ -20,6 +20,7 @@ $posted_start_time = '16:00';
 $posted_hours = 1;
 $posted_discount = 0;
 $posted_promotion_id = null;
+$posted_badminton_package_id = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $court_id = (int) $_POST['court_id'];
@@ -29,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $start_time = $_POST['start_time'];
     $hours = (int) $_POST['hours'];
     $discount = (float) ($_POST['discount'] ?? 0);
+    $badminton_package_id = !empty($_POST['badminton_package_id']) ? (int) $_POST['badminton_package_id'] : null;
+    $use_package = !empty($badminton_package_id);
 
     $posted_court_id = $court_id;
     $posted_customer_name = $customer_name;
@@ -37,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $posted_start_time = $start_time;
     $posted_hours = $hours;
     $posted_discount = $discount;
+    $posted_badminton_package_id = $badminton_package_id;
     $promotion_id = !empty($_POST['promotion_id']) ? (int) $_POST['promotion_id'] : null;
     $promo_code_input = strtoupper(trim($_POST['promo_code'] ?? ''));
     $posted_promotion_id = $promotion_id;
@@ -76,6 +80,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $isVip = ($court['court_type'] === 'vip' || $court['is_vip'] == 1);
         $group_id = $court['pricing_group_id'] ? (int) $court['pricing_group_id'] : null;
+
+        // Validate badminton package if selected
+        if ($use_package) {
+            $pkgStmt = $pdo->prepare("
+                SELECT mbp.*, bpt.name as type_name, bpt.validity_days
+                FROM member_badminton_packages mbp
+                JOIN badminton_package_types bpt ON bpt.id = mbp.badminton_package_type_id
+                WHERE mbp.id = ? AND mbp.customer_phone = ?
+            ");
+            $pkgStmt->execute([$badminton_package_id, $customer_phone]);
+            $pkg = $pkgStmt->fetch();
+
+            if (!$pkg) {
+                $error = 'ไม่พบแพ็กเกจนี้';
+            } elseif ($pkg['status'] !== 'active') {
+                $error = 'แพ็กเกจหมดอายุหรือใช้ครบแล้ว';
+            } elseif (($pkg['hours_total'] - $pkg['hours_used']) < $hours) {
+                $remaining = $pkg['hours_total'] - $pkg['hours_used'];
+                $error = "แพ็กเกจมีชั่วโมงไม่พอ (เหลือ {$remaining} ชม.)";
+            } elseif ($pkg['expiry_date'] && $pkg['expiry_date'] < $date) {
+                $error = 'แพ็กเกจหมดอายุแล้ว';
+            } elseif ($isVip) {
+                $error = 'แพ็กเกจใช้ได้เฉพาะคอร์ตปกติเท่านั้น (ไม่ใช่ VIP)';
+            }
+        }
 
         if ($group_id !== null) {
             $pph = pick_price_per_hour($start, $group_id);
@@ -148,12 +177,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!$error) {
-            // Insert booking with member_id and promotion
+            // Determine final price based on package vs promotion
+            if ($use_package) {
+                // ใช้แพ็กเกจ → ราคา 0, ส่วนลด 0, ไม่ใช้โปรโมชั่น
+                $final_price_per_hour = 0;
+                $final_discount = 0;
+                $final_total = 0;
+                $final_promotion_id = null;
+                $final_promo_percent = null;
+            } else {
+                // ไม่ใช้แพ็กเกจ → ใช้ logic เดิม
+                $final_price_per_hour = $pph;
+                $final_discount = $discount;
+                $final_total = $total;
+                $final_promotion_id = $applied_promotion_id;
+                $final_promo_percent = $applied_promotion_id ? $applied_promo_percent : null;
+            }
+
+            // Insert booking with package support
             $stmt = $pdo->prepare('INSERT INTO bookings(
                 court_id, customer_name, customer_phone, member_id, start_datetime,
                 duration_hours, price_per_hour, discount_amount, total_amount,
-                promotion_id, promotion_discount_percent, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                promotion_id, promotion_discount_percent,
+                member_badminton_package_id, used_package_hours, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 
             $stmt->execute([
                 $court_id,
@@ -162,38 +209,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $member_id,
                 $start->format('Y-m-d H:i:s'),
                 $hours,
-                $pph,
-                $discount,
-                $total,
-                $applied_promotion_id,
-                $applied_promotion_id ? $applied_promo_percent : null,
+                $final_price_per_hour,
+                $final_discount,
+                $final_total,
+                $final_promotion_id,
+                $final_promo_percent,
+                $use_package ? $badminton_package_id : null,
+                $use_package ? $hours : null,
                 $created_by
             ]);
 
             $booking_id = $pdo->lastInsertId();
 
-            // Update member stats and award points
+            // Update badminton package hours if used
+            if ($use_package) {
+                $pdo->prepare("
+                    UPDATE member_badminton_packages
+                    SET hours_used = hours_used + ?,
+                        status = CASE WHEN hours_total - (hours_used + ?) <= 0
+                                 THEN 'exhausted' ELSE 'active' END,
+                        updated_at = NOW()
+                    WHERE id = ?
+                ")->execute([$hours, $hours, $badminton_package_id]);
+            }
+
+            // Update member stats and award points (only if not using package)
             $points_earned = 0;
             if ($member_id) {
-                // Calculate points: 1 point per 100 baht spent
-                $points_earned = floor($total / 100);
+                if (!$use_package) {
+                    // Calculate points: 1 point per 100 baht spent (only for paid bookings)
+                    $points_earned = floor($final_total / 100);
 
-                // Update member statistics
-                $updateMember = $pdo->prepare("
-                    UPDATE members
-                    SET total_bookings = total_bookings + 1,
-                        total_spent = total_spent + ?,
-                        points = points + ?,
-                        last_booking_date = NOW(),
-                        member_level = CASE
-                            WHEN total_spent + ? >= 20000 THEN 'Platinum'
-                            WHEN total_spent + ? >= 10000 THEN 'Gold'
-                            WHEN total_spent + ? >= 5000 THEN 'Silver'
-                            ELSE 'Bronze'
-                        END
-                    WHERE id = ?
-                ");
-                $updateMember->execute([$total, $points_earned, $total, $total, $total, $member_id]);
+                    // Update member statistics
+                    $updateMember = $pdo->prepare("
+                        UPDATE members
+                        SET total_bookings = total_bookings + 1,
+                            total_spent = total_spent + ?,
+                            points = points + ?,
+                            last_booking_date = NOW(),
+                            member_level = CASE
+                                WHEN total_spent + ? >= 20000 THEN 'Platinum'
+                                WHEN total_spent + ? >= 10000 THEN 'Gold'
+                                WHEN total_spent + ? >= 5000 THEN 'Silver'
+                                ELSE 'Bronze'
+                            END
+                        WHERE id = ?
+                    ");
+                    $updateMember->execute([$final_total, $points_earned, $final_total, $final_total, $final_total, $member_id]);
+                } else {
+                    // ใช้แพ็กเกจ: อัพเดตเฉพาะ total_bookings และ last_booking_date
+                    $updateMember = $pdo->prepare("
+                        UPDATE members
+                        SET total_bookings = total_bookings + 1,
+                            last_booking_date = NOW()
+                        WHERE id = ?
+                    ");
+                    $updateMember->execute([$member_id]);
+                }
 
                 // Record point transaction
                 if ($points_earned > 0) {
@@ -441,6 +513,18 @@ function getCourtDisplayName($court)
                                     </div>
                                 </div>
                                 <input type="hidden" name="register_as_member" id="registerAsMemberInput" value="0">
+
+                                <!-- Badminton Package Selection -->
+                                <div id="packageSection" class="hidden mt-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                                        แพ็กเกจแบดมินตัน (ถ้ามี)
+                                    </label>
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <div id="packageList"></div>
+                                        <div id="noPackageMsg" class="text-xs text-gray-500">ไม่มีแพ็กเกจที่ใช้ได้</div>
+                                    </div>
+                                    <input type="hidden" name="badminton_package_id" id="packageInput" value="">
+                                </div>
                             </div>
                         </div>
 
@@ -680,6 +764,21 @@ function getCourtDisplayName($court)
         }
 
         function updateDisplayWithPrice(price, hours, discount, courtName, rule, isVip) {
+            // Check if using package
+            const packageId = document.getElementById('packageInput').value;
+            const usingPackage = packageId && packageId !== '';
+
+            if (usingPackage) {
+                // Using package - show zero price
+                document.getElementById('priceDisplay').textContent = '0';
+                document.getElementById('hoursDisplay').textContent = hours;
+                document.getElementById('subtotalDisplay').textContent = '0';
+                document.getElementById('discountDisplay').textContent = '0';
+                document.getElementById('totalDisplay').textContent = '฿0';
+                document.getElementById('priceInfoBox').textContent = 'ใช้แพ็กเกจแบดมินตัน (ไม่เสียค่าใช้จ่าย)';
+                return;
+            }
+
             const subtotal = price * hours;
 
             // Promo overrides member discount; fallback to member discount if no promo
@@ -953,7 +1052,12 @@ function getCourtDisplayName($court)
                                 document.getElementById('discountInput').value = memberDiscount;
                                 updatePriceDisplay();
 
+                                // Load badminton packages
+                                loadPackages(phone);
+
                             } else if (data.success && !data.is_member) {
+                                // Load packages for non-members too
+                                loadPackages(phone);
                                 // New member
                                 memberNew.classList.remove('hidden');
                                 // Show past names if any
@@ -1016,6 +1120,64 @@ function getCourtDisplayName($court)
                 checkMemberOnPhoneInput();
             }
         });
+
+        // ============================================================
+        // Badminton Package Functions
+        // ============================================================
+        function loadPackages(phone) {
+            const packageSection = document.getElementById('packageSection');
+            const packageList = document.getElementById('packageList');
+            const noPackageMsg = document.getElementById('noPackageMsg');
+
+            if (!phone || phone.length < 9) {
+                packageSection.classList.add('hidden');
+                document.getElementById('packageInput').value = '';
+                return;
+            }
+
+            fetch(`/bookings/get_badminton_packages_ajax.php?phone=${phone}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.packages && data.packages.length > 0) {
+                        packageSection.classList.remove('hidden');
+                        packageList.innerHTML = data.packages.map(pkg => `
+                            <button type="button"
+                                    class="w-full text-left mb-2 p-2 rounded border border-blue-300 hover:bg-blue-100 transition-colors pkg-btn"
+                                    data-pkg-id="${pkg.id}"
+                                    data-remaining="${pkg.remaining}"
+                                    onclick="selectPackage(${pkg.id}, ${pkg.remaining})">
+                                <div class="text-xs font-semibold text-blue-900">${pkg.type_name}</div>
+                                <div class="text-xs text-blue-700">
+                                    เหลือ: ${pkg.remaining} ชม. · หมด: ${pkg.expiry_date || 'ไม่จำกัด'}
+                                </div>
+                            </button>
+                        `).join('');
+                        noPackageMsg.classList.add('hidden');
+                    } else {
+                        packageSection.classList.add('hidden');
+                        document.getElementById('packageInput').value = '';
+                    }
+                })
+                .catch(() => {
+                    packageSection.classList.add('hidden');
+                    document.getElementById('packageInput').value = '';
+                });
+        }
+
+        function selectPackage(pkgId, remaining) {
+            document.getElementById('packageInput').value = pkgId;
+
+            // Highlight selected button
+            document.querySelectorAll('.pkg-btn').forEach(b => {
+                b.classList.remove('bg-blue-200', 'border-blue-500');
+                b.classList.add('border-blue-300');
+            });
+            event.target.closest('button').classList.add('bg-blue-200', 'border-blue-500');
+            event.target.closest('button').classList.remove('border-blue-300');
+
+            // Update price display to show "ใช้แพ็กเกจ" instead of price
+            updatePriceDisplay();
+        }
     </script>
     <!-- ════════════════════════════════════════════════════════════
      Stable Drum Time Picker Modal
