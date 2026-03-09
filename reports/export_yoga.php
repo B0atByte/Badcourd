@@ -25,7 +25,7 @@ if ($exportType === 'today') {
 // ──────────────────────────────────────────────────────────────────────────
 // HELPER: สไตล์หัวตาราง
 // ──────────────────────────────────────────────────────────────────────────
-function headerStyle(string $colorHex = '005691'): array
+function headerStyle(string $colorHex = 'D32F2F'): array
 {
     return [
         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -44,7 +44,7 @@ function titleBlockStyle(): array
 {
     return [
         'font' => ['bold' => true, 'size' => 13, 'color' => ['rgb' => 'FFFFFF']],
-        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '005691']],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D32F2F']],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     ];
 }
@@ -52,7 +52,7 @@ function titleBlockStyle(): array
 function subBlockStyle(): array
 {
     return [
-        'font' => ['size' => 10, 'color' => ['rgb' => '004A7C']],
+        'font' => ['size' => 10, 'color' => ['rgb' => 'B71C1C']],
         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F4FE']],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     ];
@@ -131,7 +131,7 @@ if (isset($_GET['download'])) {
         'สถานะ'
     ];
     $sh1->fromArray([$attHeaders], null, 'A5');
-    $sh1->getStyle('A5:L5')->applyFromArray(headerStyle('005691'));
+    $sh1->getStyle('A5:L5')->applyFromArray(headerStyle('D32F2F'));
     $sh1->getRowDimension(5)->setRowHeight(22);
 
     // Data
@@ -197,7 +197,7 @@ if (isset($_GET['download'])) {
     // Summary
     $r++;
     $sh1->setCellValue('A' . $r, 'สรุป');
-    $sh1->getStyle('A' . $r)->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '005691']]]);
+    $sh1->getStyle('A' . $r)->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D32F2F']]]);
     $r++;
     foreach ([
         ['รายการทั้งหมด', count($attRows) . ' รายการ'],
@@ -274,7 +274,7 @@ if (isset($_GET['download'])) {
         'สถานะ'
     ];
     $sh2->fromArray([$pkgHeaders], null, 'A5');
-    $sh2->getStyle('A5:L5')->applyFromArray(headerStyle('004A7C'));
+    $sh2->getStyle('A5:L5')->applyFromArray(headerStyle('B71C1C'));
     $sh2->getRowDimension(5)->setRowHeight(22);
 
     // Data
@@ -329,7 +329,7 @@ if (isset($_GET['download'])) {
     // Summary
     $r++;
     $sh2->setCellValue('A' . $r, 'สรุป');
-    $sh2->getStyle('A' . $r)->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '004A7C']]]);
+    $sh2->getStyle('A' . $r)->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'B71C1C']]]);
     $r++;
     foreach ([
         ['จำนวนแพ็กเกจที่ซื้อ', count($pkgRows) . ' แพ็กเกจ'],
@@ -436,9 +436,9 @@ $pkgStats = $pkgStatsStmt->fetch();
                 <a href="/reports/export_excel.php"
                     class="text-gray-400 hover:text-gray-600 text-sm transition-colors">รายงานแบดมินตัน</a>
                 <span class="text-gray-300">/</span>
-                <span class="text-sm font-medium" style="color:#005691;">รายงานโยคะ</span>
+                <span class="text-sm font-medium" style="color:#D32F2F;">รายงานโยคะ</span>
             </div>
-            <h1 style="color:#005691;" class="text-2xl font-bold mb-1">ออกรายงาน Excel — คลาสโยคะ</h1>
+            <h1 style="color:#D32F2F;" class="text-2xl font-bold mb-1">ออกรายงาน Excel — คลาสโยคะ</h1>
             <p class="text-gray-500 text-sm">ดาวน์โหลดบันทึกการเรียนและข้อมูลการขายแพ็กเกจโยคะในรูปแบบ Excel (2 Sheet)
             </p>
         </div>
@@ -448,13 +448,13 @@ $pkgStats = $pkgStatsStmt->fetch();
 
             <form method="get" class="bg-white rounded-xl border border-gray-200 p-6">
                 <div class="mb-4">
-                    <h3 style="color:#005691;" class="text-lg font-bold mb-1">ข้อมูลวันนี้</h3>
+                    <h3 style="color:#D32F2F;" class="text-lg font-bold mb-1">ข้อมูลวันนี้</h3>
                     <p class="text-sm text-gray-600">Export คลาสวันที่
                         <?= date('d/m/Y') ?>
                     </p>
                 </div>
                 <input type="hidden" name="type" value="today">
-                <button type="submit" name="download" value="1" style="background:#005691;"
+                <button type="submit" name="download" value="1" style="background:#D32F2F;"
                     class="w-full px-4 py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">
                     ดาวน์โหลด Excel
                 </button>
@@ -462,11 +462,11 @@ $pkgStats = $pkgStatsStmt->fetch();
 
             <form method="get" class="bg-white rounded-xl border border-gray-200 p-6">
                 <div class="mb-4">
-                    <h3 style="color:#005691;" class="text-lg font-bold mb-1">ข้อมูลทั้งหมด</h3>
+                    <h3 style="color:#D32F2F;" class="text-lg font-bold mb-1">ข้อมูลทั้งหมด</h3>
                     <p class="text-sm text-gray-600">Export ทุกคลาสและแพ็กเกจตั้งแต่เริ่มต้น</p>
                 </div>
                 <input type="hidden" name="type" value="all">
-                <button type="submit" name="download" value="1" style="background:#005691;"
+                <button type="submit" name="download" value="1" style="background:#D32F2F;"
                     class="w-full px-4 py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">
                     ดาวน์โหลด Excel
                 </button>
@@ -474,23 +474,23 @@ $pkgStats = $pkgStatsStmt->fetch();
 
             <form method="get" class="bg-white rounded-xl border border-gray-200 p-6">
                 <div class="mb-4">
-                    <h3 style="color:#005691;" class="text-lg font-bold mb-1">ช่วงเวลาที่กำหนด</h3>
+                    <h3 style="color:#D32F2F;" class="text-lg font-bold mb-1">ช่วงเวลาที่กำหนด</h3>
                     <p class="text-sm text-gray-600 mb-3">Export ตามช่วงวันที่เลือก</p>
                 </div>
                 <div class="space-y-3 mb-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">วันที่เริ่มต้น</label>
                         <input type="date" name="from" value="<?= htmlspecialchars($from) ?>"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] outline-none text-sm">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] outline-none text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">วันที่สิ้นสุด</label>
                         <input type="date" name="to" value="<?= htmlspecialchars($to) ?>"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] outline-none text-sm">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] outline-none text-sm">
                     </div>
                 </div>
                 <input type="hidden" name="type" value="range">
-                <button type="submit" name="download" value="1" style="background:#005691;"
+                <button type="submit" name="download" value="1" style="background:#D32F2F;"
                     class="w-full px-4 py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">
                     ดาวน์โหลด Excel
                 </button>
@@ -501,7 +501,7 @@ $pkgStats = $pkgStatsStmt->fetch();
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-xl border border-gray-200 p-4">
                 <p class="text-gray-400 text-xs mb-1">รายการทั้งหมด</p>
-                <p style="color:#005691;" class="text-2xl font-bold">
+                <p style="color:#D32F2F;" class="text-2xl font-bold">
                     <?= number_format($stats['total_bookings'] ?? 0) ?>
                 </p>
             </div>
@@ -519,7 +519,7 @@ $pkgStats = $pkgStatsStmt->fetch();
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-4">
                 <p class="text-gray-400 text-xs mb-1">แพ็กเกจที่ขาย</p>
-                <p style="color:#004A7C;" class="text-2xl font-bold">
+                <p style="color:#B71C1C;" class="text-2xl font-bold">
                     <?= number_format($pkgStats['sold'] ?? 0) ?>
                 </p>
             </div>
@@ -548,7 +548,7 @@ $pkgStats = $pkgStatsStmt->fetch();
         <!-- Preview Section -->
         <?php if (count($previewRows) > 0): ?>
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-                <div style="background:#005691;" class="px-6 py-4 flex justify-between items-center">
+                <div style="background:#D32F2F;" class="px-6 py-4 flex justify-between items-center">
                     <h2 class="text-sm font-bold text-white">ตัวอย่าง Sheet 1: บันทึกการเรียน (10 รายการแรก)</h2>
                     <span class="text-blue-200 text-xs hidden sm:block">วันที่ · เวลา · ห้อง · ครู · ชื่อ · เบอร์ · แพ็กเกจ
                         · สถานะ</span>
@@ -556,7 +556,7 @@ $pkgStats = $pkgStatsStmt->fetch();
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr style="background:#004A7C;" class="text-white text-xs">
+                            <tr style="background:#B71C1C;" class="text-white text-xs">
                                 <th class="px-3 py-3 text-center font-medium">#</th>
                                 <th class="px-3 py-3 text-left font-medium">วันที่เรียน</th>
                                 <th class="px-3 py-3 text-center font-medium">เวลา</th>

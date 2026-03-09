@@ -98,11 +98,11 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div>
-      <h1 style="color:#005691;" class="text-2xl font-bold">รายการจองทั้งหมด</h1>
+      <h1 style="color:#D32F2F;" class="text-2xl font-bold">รายการจองทั้งหมด</h1>
       <p class="text-gray-500 text-sm mt-0.5">แสดง <?= count($rows) ?> จาก <?= $totalRecords ?> รายการ</p>
     </div>
     <a href="create.php"
-       style="background:#004A7C;"
+       style="background:#B71C1C;"
        class="px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
       + จองคอร์ตใหม่
     </a>
@@ -112,11 +112,11 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-500 text-xs mb-1">จองทั้งหมด</p>
-      <p style="color:#005691;" class="text-2xl font-bold"><?= $totalRecords ?></p>
+      <p style="color:#D32F2F;" class="text-2xl font-bold"><?= $totalRecords ?></p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-500 text-xs mb-1">กำลังใช้งาน</p>
-      <p style="color:#004A7C;" class="text-2xl font-bold"><?= $bookedTotal ?></p>
+      <p style="color:#B71C1C;" class="text-2xl font-bold"><?= $bookedTotal ?></p>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-500 text-xs mb-1">ยกเลิกแล้ว</p>
@@ -124,7 +124,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-gray-500 text-xs mb-1">รายได้รวม</p>
-      <p style="color:#004A7C;" class="text-2xl font-bold">฿<?= number_format($totalRevenue, 0) ?></p>
+      <p style="color:#B71C1C;" class="text-2xl font-bold">฿<?= number_format($totalRevenue, 0) ?></p>
     </div>
   </div>
 
@@ -138,14 +138,14 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
           <label class="block text-xs font-medium text-gray-600 mb-1.5">ค้นหา</label>
           <input type="text" name="search" value="<?= htmlspecialchars($search) ?>"
                  placeholder="ชื่อ, เบอร์โทร, คอร์ต..."
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none text-sm">
         </div>
 
         <!-- Status Filter -->
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1.5">สถานะ</label>
           <select name="status"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none text-sm">
             <option value="">ทั้งหมด</option>
             <option value="booked" <?= $status === 'booked' ? 'selected' : '' ?>>จองแล้ว</option>
             <option value="cancelled" <?= $status === 'cancelled' ? 'selected' : '' ?>>ยกเลิก</option>
@@ -156,7 +156,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1.5">แสดง</label>
           <select name="per_page"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none text-sm">
             <option value="10" <?= $per_page === 10 ? 'selected' : '' ?>>10 รายการ</option>
             <option value="25" <?= $per_page === 25 ? 'selected' : '' ?>>25 รายการ</option>
             <option value="50" <?= $per_page === 50 ? 'selected' : '' ?>>50 รายการ</option>
@@ -169,20 +169,20 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1.5">จากวันที่</label>
           <input type="date" name="date_from" value="<?= htmlspecialchars($date_from) ?>"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none text-sm">
         </div>
 
         <!-- Date To -->
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1.5">ถึงวันที่</label>
           <input type="date" name="date_to" value="<?= htmlspecialchars($date_to) ?>"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none text-sm">
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none text-sm">
         </div>
 
         <!-- Buttons -->
         <div class="lg:col-span-2 flex gap-2 items-end">
           <button type="submit"
-                  style="background:#004A7C;"
+                  style="background:#B71C1C;"
                   class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             ค้นหา
           </button>
@@ -211,7 +211,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
       <div class="p-4">
         <div class="flex justify-between items-start mb-2">
           <div>
-            <span style="color:#005691;" class="font-semibold"><?= htmlspecialchars($courtLabel) ?></span>
+            <span style="color:#D32F2F;" class="font-semibold"><?= htmlspecialchars($courtLabel) ?></span>
             <span class="text-gray-500 text-sm ml-2"><?=$s->format('d/m/Y')?></span>
           </div>
           <span class="text-xs px-2 py-1 rounded-full <?= $isBooked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' ?>">
@@ -221,7 +221,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
         <div class="text-sm text-gray-600 mb-2">
           <?=$s->format('H:i')?> - <?=$s->modify('+'.$r['duration_hours'].' hour')->format('H:i')?>
           &nbsp;·&nbsp; <?=htmlspecialchars($r['customer_name'])?>
-          &nbsp;·&nbsp; <span style="color:#004A7C;" class="font-medium">฿<?=number_format($r['total_amount'],0)?></span>
+          &nbsp;·&nbsp; <span style="color:#B71C1C;" class="font-medium">฿<?=number_format($r['total_amount'],0)?></span>
         </div>
         <div class="flex gap-2 flex-wrap">
           <?php if (!empty($r['payment_slip_path'])): ?>
@@ -229,8 +229,8 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
                   class="text-sm border border-purple-200 text-purple-600 px-3 py-1 rounded hover:bg-purple-50 transition-colors">ดูสลิป</button>
           <?php endif; ?>
           <a href="update.php?id=<?=$r['id']?>"
-             style="color:#004A7C;"
-             class="text-sm border border-[#E8F1F5] px-3 py-1 rounded hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
+             style="color:#B71C1C;"
+             class="text-sm border border-[#FFEBEE] px-3 py-1 rounded hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
           <?php if($isBooked): ?>
           <button type="button"
              onclick="swalDelete('cancel.php?id=<?=$r['id']?>', '<?= htmlspecialchars($r['customer_name'], ENT_QUOTES) ?>', 'ยืนยันยกเลิกการจอง?')"
@@ -252,7 +252,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
       <?php if (count($rows) > 0): ?>
       <table class="w-full text-sm">
         <thead>
-          <tr style="background:#005691;" class="text-white text-left">
+          <tr style="background:#D32F2F;" class="text-white text-left">
             <th class="px-4 py-3 font-medium">วันที่</th>
             <th class="px-4 py-3 font-medium">เวลา</th>
             <th class="px-4 py-3 font-medium text-center">คอร์ต</th>
@@ -280,11 +280,11 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
             </td>
             <td class="px-4 py-3 text-center">
               <?php if ($isVipCourt): ?>
-              <span style="background:#005691;" class="inline-flex items-center justify-center px-2 h-8 text-white rounded-lg text-xs font-bold whitespace-nowrap max-w-[7rem] overflow-hidden" title="<?= htmlspecialchars($courtLabel) ?>">
+              <span style="background:#D32F2F;" class="inline-flex items-center justify-center px-2 h-8 text-white rounded-lg text-xs font-bold whitespace-nowrap max-w-[7rem] overflow-hidden" title="<?= htmlspecialchars($courtLabel) ?>">
                 <?= htmlspecialchars(mb_strimwidth($courtLabel, 0, 8, '…')) ?>
               </span>
               <?php else: ?>
-              <span style="background:#004A7C;" class="inline-flex items-center justify-center w-8 h-8 text-white rounded-lg text-xs font-bold">
+              <span style="background:#B71C1C;" class="inline-flex items-center justify-center w-8 h-8 text-white rounded-lg text-xs font-bold">
                 <?= htmlspecialchars($courtLabel) ?>
               </span>
               <?php endif; ?>
@@ -301,7 +301,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
                 <?php endif; ?>
               <?php else: ?>-<?php endif; ?>
             </td>
-            <td style="color:#004A7C;" class="px-4 py-3 text-right font-semibold">฿<?=number_format($r['total_amount'],0)?></td>
+            <td style="color:#B71C1C;" class="px-4 py-3 text-right font-semibold">฿<?=number_format($r['total_amount'],0)?></td>
             <td class="px-4 py-3 text-center">
               <span class="text-xs px-2 py-1 rounded-full <?= $isBooked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' ?>">
                 <?= $isBooked ? 'จองแล้ว' : 'ยกเลิก' ?>
@@ -316,7 +316,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
                 </button>
                 <?php endif; ?>
                 <a href="update.php?id=<?=$r['id']?>"
-                   style="color:#004A7C; border-color:#E8F1F5;"
+                   style="color:#B71C1C; border-color:#FFEBEE;"
                    class="px-3 py-1 border rounded text-xs hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
                 <?php if($isBooked): ?>
                 <button type="button"
@@ -369,7 +369,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
         $pageLink = 'index.php?' . http_build_query($queryParams);
       ?>
         <a href="<?= $pageLink ?>"
-           class="px-4 py-2 border rounded-lg text-sm transition-colors <?= $i === $page ? 'bg-[#005691] text-white border-[#005691]' : 'bg-white border-gray-300 hover:bg-gray-50' ?>">
+           class="px-4 py-2 border rounded-lg text-sm transition-colors <?= $i === $page ? 'bg-[#D32F2F] text-white border-[#D32F2F]' : 'bg-white border-gray-300 hover:bg-gray-50' ?>">
           <?= $i ?>
         </a>
       <?php endfor; ?>
@@ -393,7 +393,7 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
   <div class="bg-white rounded-2xl p-5 max-w-sm w-full mx-4 shadow-2xl"
        onclick="event.stopPropagation()">
     <div class="flex justify-between items-center mb-4">
-      <h3 style="color:#005691;" class="font-semibold text-sm">สลิปการชำระเงิน</h3>
+      <h3 style="color:#D32F2F;" class="font-semibold text-sm">สลิปการชำระเงิน</h3>
       <button onclick="closeSlip()"
               class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
     </div>

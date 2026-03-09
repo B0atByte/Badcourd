@@ -149,8 +149,8 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
       font-size: 0.7rem;
       padding: 2px 8px;
       border-radius: 99px;
-      background: #EBF4FA;
-      color: #005691;
+      background: #FFEBEE;
+      color: #D32F2F;
       margin: 1px;
     }
   </style>
@@ -165,19 +165,19 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
     <!-- Page Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold" style="color:#005691;">จัดการผู้ใช้งาน</h1>
+        <h1 class="text-2xl font-bold" style="color:#D32F2F;">จัดการผู้ใช้งาน</h1>
         <p class="text-gray-400 text-sm mt-0.5">สร้างและกำหนดสิทธิ์การเข้าถึงสำหรับแต่ละบัญชี</p>
       </div>
       <button onclick="document.getElementById('addModal').classList.remove('hidden')"
         class="px-4 py-2 text-sm text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
-        style="background:#005691;">+ เพิ่มผู้ใช้</button>
+        style="background:#D32F2F;">+ เพิ่มผู้ใช้</button>
     </div>
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-4 mb-6">
       <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
         <p class="text-xs text-gray-400 mb-1">ผู้ใช้ทั้งหมด</p>
-        <p class="text-2xl font-bold" style="color:#005691;"><?= $stats['total'] ?></p>
+        <p class="text-2xl font-bold" style="color:#D32F2F;"><?= $stats['total'] ?></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
         <p class="text-xs text-gray-400 mb-1">ใช้งานอยู่</p>
@@ -194,7 +194,7 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
       <form method="get" class="flex gap-2">
         <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="ค้นหาชื่อผู้ใช้..."
           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-400">
-        <button type="submit" class="px-5 py-2 text-sm text-white rounded-lg" style="background:#005691;">ค้นหา</button>
+        <button type="submit" class="px-5 py-2 text-sm text-white rounded-lg" style="background:#D32F2F;">ค้นหา</button>
         <?php if ($search): ?>
           <a href="users.php"
             class="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">ล้าง</a>
@@ -226,7 +226,7 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
                 <div class="flex items-center gap-2">
                   <div
                     class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-                    style="background:#005691;"><?= strtoupper(mb_substr($u['username'], 0, 1)) ?></div>
+                    style="background:#D32F2F;"><?= strtoupper(mb_substr($u['username'], 0, 1)) ?></div>
                   <div>
                     <p class="font-medium text-gray-800"><?= htmlspecialchars($u['username']) ?></p>
                     <?php if ($isSelf): ?><span class="text-xs text-blue-500">(คุณ)</span><?php endif; ?>
@@ -365,7 +365,7 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
         <!-- Submit -->
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             สร้างผู้ใช้
           </button>
           <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')"
@@ -422,7 +422,7 @@ $stats = $pdo->query("SELECT COUNT(*) total, SUM(active) act, SUM(role='admin') 
         <!-- Submit -->
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             บันทึก
           </button>
           <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')"

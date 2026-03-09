@@ -195,7 +195,7 @@ $levelColors = [
 
         <!-- Header -->
         <div class="mb-6">
-            <h1 style="color:#005691;" class="text-2xl font-bold mb-2">จัดการสมาชิก</h1>
+            <h1 style="color:#D32F2F;" class="text-2xl font-bold mb-2">จัดการสมาชิก</h1>
             <p class="text-gray-600 text-sm">จัดการข้อมูลสมาชิกและแต้มสะสม</p>
         </div>
 
@@ -207,7 +207,7 @@ $levelColors = [
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <p class="text-sm text-gray-500 mb-1">สมาชิกที่ใช้งาน</p>
-                <p class="text-2xl font-bold" style="color:#005691;"><?= number_format($stats['active_members'] ?? 0) ?>
+                <p class="text-2xl font-bold" style="color:#D32F2F;"><?= number_format($stats['active_members'] ?? 0) ?>
                 </p>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -257,7 +257,7 @@ $levelColors = [
                         <option value="all" <?= $per_page === 0 ? 'selected' : '' ?>>ทั้งหมด</option>
                     </select>
                     <div class="flex-1"></div>
-                    <button type="submit" style="background:#005691;"
+                    <button type="submit" style="background:#D32F2F;"
                         class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         ค้นหา
                     </button>
@@ -276,7 +276,7 @@ $levelColors = [
             <!-- Table header with count -->
             <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <span class="text-sm text-gray-600 font-medium">
-                    พบ <span style="color:#005691;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
+                    พบ <span style="color:#D32F2F;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
                     <?php if ($search !== '' || $level_filter !== '' || $status_filter !== ''): ?>
                         <span class="text-gray-400 text-xs">(กรองแล้ว)</span>
                     <?php endif; ?>
@@ -286,7 +286,7 @@ $levelColors = [
                         <span class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></span>
                     <?php endif; ?>
                     <button type="button" onclick="openAddModal()"
-                        style="background:#005691;"
+                        style="background:#D32F2F;"
                         class="px-4 py-1.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -358,7 +358,7 @@ $levelColors = [
                                     <td class="px-4 py-3">
                                         <div class="flex items-center justify-center gap-2">
                                             <a href="/members/profile.php?id=<?= $member['id'] ?>" class="text-sm"
-                                                style="color:#005691;" title="ดูโปรไฟล์">
+                                                style="color:#D32F2F;" title="ดูโปรไฟล์">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -434,21 +434,21 @@ $levelColors = [
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
                     <input type="tel" name="phone" required placeholder="0812345678"
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] outline-none text-sm">
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
                     <input type="text" name="name" required placeholder="ชื่อ-นามสกุล"
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] outline-none text-sm">
                 </div>
                 <div class="mb-5">
                     <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal">(ไม่บังคับ)</span></label>
                     <input type="email" name="email" placeholder="example@email.com"
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] outline-none text-sm">
                 </div>
                 <p class="text-xs text-gray-400 mb-4">ระดับเริ่มต้น: Bronze | แต้ม: 0 | สถานะ: Active</p>
                 <div class="flex gap-3">
-                    <button type="submit" style="background:#005691;"
+                    <button type="submit" style="background:#D32F2F;"
                         class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         เพิ่มสมาชิก
                     </button>
@@ -471,15 +471,15 @@ $levelColors = [
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
                     <input type="text" name="name" id="edit_name" required placeholder="ชื่อ-นามสกุล"
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] outline-none text-sm">
                 </div>
                 <div class="mb-5">
                     <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal">(ไม่บังคับ)</span></label>
                     <input type="email" name="email" id="edit_email" placeholder="example@email.com"
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] outline-none text-sm">
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] outline-none text-sm">
                 </div>
                 <div class="flex gap-3">
-                    <button type="submit" style="background:#005691;"
+                    <button type="submit" style="background:#D32F2F;"
                         class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         บันทึก
                     </button>
@@ -512,18 +512,18 @@ $levelColors = [
                     <label class="block text-sm font-medium text-gray-700 mb-1">ปรับแต้ม</label>
                     <input type="number" name="points_change" required
                         placeholder="ใส่จำนวนเป็นบวกเพื่อเพิ่ม หรือลบเพื่อลด"
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                     <p class="text-xs text-gray-500 mt-1">ใส่เลขบวก (+) เพื่อเพิ่มแต้ม หรือเลขลบ (-) เพื่อลดแต้ม</p>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียด</label>
                     <textarea name="description" required rows="3" placeholder="เหตุผลในการปรับแต้ม..."
-                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm"></textarea>
+                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="submit" style="background:#005691;"
+                    <button type="submit" style="background:#D32F2F;"
                         class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         บันทึก
                     </button>

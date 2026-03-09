@@ -401,7 +401,7 @@ function getCourtDisplayName($court)
     <div class="max-w-5xl mx-auto px-4 py-8">
 
         <div class="mb-6">
-            <h1 style="color:#005691;" class="text-2xl font-bold">จองคอร์ตแบดมินตัน</h1>
+            <h1 style="color:#D32F2F;" class="text-2xl font-bold">จองคอร์ตแบดมินตัน</h1>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -414,7 +414,7 @@ function getCourtDisplayName($court)
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">เลือกคอร์ต / ห้อง</label>
                             <select name="court_id" id="courtSelect" required onchange="updatePriceOnCourtChange()"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                                 <?php
                                 $vipCourts = array_filter($courts, fn($c) => $c['court_type'] === 'vip' || $c['is_vip'] == 1);
                                 $normalCourts = array_filter($courts, fn($c) => $c['court_type'] === 'normal' || $c['is_vip'] == 0);
@@ -450,7 +450,7 @@ function getCourtDisplayName($court)
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อผู้จอง</label>
                             <input type="text" name="customer_name" id="customerNameInput" required
                                 value="<?= htmlspecialchars($posted_customer_name) ?>" placeholder="กรอกชื่อผู้จอง"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                             <!-- ชื่อที่เคยใช้กับเบอร์นี้ -->
                             <div id="nameChipsWrap" class="hidden mt-2">
                                 <p class="text-xs text-gray-500 mb-1.5">เลือกชื่อที่เคยใช้:</p>
@@ -463,7 +463,7 @@ function getCourtDisplayName($court)
                             <input type="tel" name="customer_phone" id="phoneInput"
                                 value="<?= htmlspecialchars($posted_customer_phone) ?>" placeholder="0XX-XXX-XXXX"
                                 maxlength="10" pattern="[0-9]{10}"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm"
+                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm"
                                 oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10); checkMemberOnPhoneInput();">
 
                             <!-- Member Info Box -->
@@ -532,7 +532,7 @@ function getCourtDisplayName($court)
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">วันที่จอง</label>
                             <input type="date" name="date" id="dateInput" required
                                 value="<?= htmlspecialchars($posted_date) ?>" onchange="updatePriceDisplay()"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                         </div>
 
                         <div>
@@ -540,7 +540,7 @@ function getCourtDisplayName($court)
 
                             <!-- Time Display -->
                             <div id="timePickerDisplay" onclick="openTimePicker()"
-                                class="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white cursor-pointer hover:border-[#005691] transition-colors w-full">
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white cursor-pointer hover:border-[#D32F2F] transition-colors w-full">
                                 <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -564,14 +564,14 @@ function getCourtDisplayName($court)
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">จำนวนชั่วโมง</label>
                             <input type="number" name="hours" id="hoursInput" required min="1" max="24"
                                 value="<?= $posted_hours ?>" oninput="updatePriceDisplay()"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">ส่วนลด (บาท)</label>
                             <input type="number" step="1" name="discount" id="discountInput"
                                 value="<?= $posted_discount ?>" oninput="updatePriceDisplay()"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                         </div>
 
                         <!-- Promotion Section -->
@@ -581,7 +581,7 @@ function getCourtDisplayName($court)
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">เลือกจากรายการ</label>
                                     <select id="promoSelect" name="promotion_id" onchange="onPromoDropdownChange()"
-                                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+                                        class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                                         <option value="">— ไม่ใช้โปรโมชั่น —</option>
                                         <?php foreach ($activePromos as $p): ?>
                                             <option value="<?= $p['id'] ?>" data-percent="<?= $p['discount_percent'] ?>"
@@ -600,8 +600,8 @@ function getCourtDisplayName($court)
                                         <input type="text" id="promoCodeInput" name="promo_code" maxlength="30"
                                             placeholder="เช่น STAFF15" oninput="this.value = this.value.toUpperCase()"
                                             style="text-transform:uppercase"
-                                            class="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
-                                        <button type="button" onclick="checkPromoCode()" style="background:#004A7C;"
+                                            class="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
+                                        <button type="button" onclick="checkPromoCode()" style="background:#B71C1C;"
                                             class="px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
                                             ตรวจสอบ
                                         </button>
@@ -631,7 +631,7 @@ function getCourtDisplayName($court)
                                     10MB)</span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <label for="slipInput" style="border-color:#E8F1F5; color:#004A7C;"
+                                <label for="slipInput" style="border-color:#FFEBEE; color:#B71C1C;"
                                     class="cursor-pointer flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm hover:bg-[#FAFAFA] transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -655,11 +655,11 @@ function getCourtDisplayName($court)
                         </div>
 
                         <div class="md:col-span-2 flex gap-3 mt-2">
-                            <button type="submit" style="background:#004A7C;"
+                            <button type="submit" style="background:#B71C1C;"
                                 class="flex-1 sm:flex-none px-8 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                                 บันทึกการจอง
                             </button>
-                            <a href="/timetable.php" style="color:#004A7C; border-color:#E8F1F5;"
+                            <a href="/timetable.php" style="color:#B71C1C; border-color:#FFEBEE;"
                                 class="flex-1 sm:flex-none px-6 py-2.5 border text-sm font-medium rounded-lg text-center hover:bg-[#FAFAFA] transition-colors">
                                 ดูตารางเวลา
                             </a>
@@ -671,7 +671,7 @@ function getCourtDisplayName($court)
 
             <!-- Summary -->
             <div class="lg:col-span-1">
-                <div style="background:#005691;" class="rounded-xl p-6 sticky top-20">
+                <div style="background:#D32F2F;" class="rounded-xl p-6 sticky top-20">
                     <h3 class="text-white font-semibold mb-5 text-sm uppercase tracking-wide">สรุปการจอง</h3>
 
                     <div class="space-y-3 mb-5">
@@ -692,12 +692,12 @@ function getCourtDisplayName($court)
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-blue-200">ส่วนลด</span>
-                            <span style="color:#E8F1F5;" class="font-medium">-<span
+                            <span style="color:#FFEBEE;" class="font-medium">-<span
                                     id="discountDisplay"><?= number_format($posted_discount, 0) ?></span> ฿</span>
                         </div>
                     </div>
 
-                    <div style="background:#004A7C;" class="rounded-lg p-4 text-center">
+                    <div style="background:#B71C1C;" class="rounded-lg p-4 text-center">
                         <p class="text-blue-100 text-xs mb-1">ยอดชำระ</p>
                         <p class="text-white text-3xl font-bold" id="totalDisplay">
                             ฿<?= number_format($currentTotal, 0) ?></p>
@@ -961,23 +961,23 @@ function getCourtDisplayName($court)
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.textContent = name;
-                btn.className = 'px-2.5 py-1 text-xs rounded-full border border-[#005691] text-[#005691] hover:bg-[#005691] hover:text-white transition-colors cursor-pointer';
+                btn.className = 'px-2.5 py-1 text-xs rounded-full border border-[#D32F2F] text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white transition-colors cursor-pointer';
                 btn.addEventListener('click', () => {
                     document.getElementById('customerNameInput').value = name;
                     // Highlight selected
                     container.querySelectorAll('button').forEach(b => {
-                        b.classList.remove('bg-[#005691]', 'text-white');
-                        b.classList.add('text-[#005691]');
+                        b.classList.remove('bg-[#D32F2F]', 'text-white');
+                        b.classList.add('text-[#D32F2F]');
                     });
-                    btn.classList.add('bg-[#005691]', 'text-white');
-                    btn.classList.remove('text-[#005691]');
+                    btn.classList.add('bg-[#D32F2F]', 'text-white');
+                    btn.classList.remove('text-[#D32F2F]');
                 });
                 container.appendChild(btn);
             });
             // Auto-select first chip
             if (container.firstChild) {
-                container.firstChild.classList.add('bg-[#005691]', 'text-white');
-                container.firstChild.classList.remove('text-[#005691]');
+                container.firstChild.classList.add('bg-[#D32F2F]', 'text-white');
+                container.firstChild.classList.remove('text-[#D32F2F]');
             }
             wrap.classList.remove('hidden');
         }
@@ -1191,13 +1191,13 @@ function getCourtDisplayName($court)
 
             <!-- Header -->
             <div
-                style="background:#005691;padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center">
+                style="background:#D32F2F;padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center">
                 <span style="color:#fff;font-weight:600;font-size:.88rem">เลือกเวลาเริ่มต้น</span>
                 <span style="color:#90caf9;font-size:.72rem">06:00 – 23:00 น.</span>
             </div>
 
             <!-- Live clock -->
-            <div style="background:#004A7C;text-align:center;padding:8px 0">
+            <div style="background:#B71C1C;text-align:center;padding:8px 0">
                 <span id="tpLive" style="color:#fff;font-size:1.9rem;font-weight:700;letter-spacing:.1em">16:00</span>
             </div>
 
@@ -1265,7 +1265,7 @@ function getCourtDisplayName($court)
                 </button>
                 <button type="button" onclick="confirmTimePicker()" style="
         flex:1;padding:10px;border:none;border-radius:12px;
-        font-size:.85rem;font-weight:600;color:#fff;background:#005691;cursor:pointer">
+        font-size:.85rem;font-weight:600;color:#fff;background:#D32F2F;cursor:pointer">
                     ยืนยัน
                 </button>
             </div>
@@ -1306,7 +1306,7 @@ function getCourtDisplayName($court)
         }
 
         .tp-row.tp-sel {
-            color: #005691;
+            color: #D32F2F;
             font-weight: 700;
             font-size: 1.1rem
         }
@@ -1325,9 +1325,9 @@ function getCourtDisplayName($court)
         }
 
         .tp-period-btn.active {
-            background: #005691;
+            background: #D32F2F;
             color: #fff;
-            border-color: #005691
+            border-color: #D32F2F
         }
     </style>
 

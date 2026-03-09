@@ -165,14 +165,14 @@ function timelineSlots(array $rules, string $day_type): array
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
       <div>
-        <h1 style="color:#005691;" class="text-2xl font-bold">ตั้งราคาคอร์ต</h1>
+        <h1 style="color:#D32F2F;" class="text-2xl font-bold">ตั้งราคาคอร์ต</h1>
         <p class="text-gray-500 text-sm mt-0.5">
           กำหนดกลุ่มกฎราคาตามช่วงเวลา ·
-          <a href="courts.php" style="color:#004A7C;" class="underline">กำหนดให้คอร์ตที่ จัดการคอร์ต</a>
+          <a href="courts.php" style="color:#B71C1C;" class="underline">กำหนดให้คอร์ตที่ จัดการคอร์ต</a>
         </p>
       </div>
       <!-- ปุ่มสร้างกลุ่มใหม่ -->
-      <button onclick="document.getElementById('newGroupPanel').classList.toggle('hidden')" style="background:#005691;"
+      <button onclick="document.getElementById('newGroupPanel').classList.toggle('hidden')" style="background:#D32F2F;"
         class="self-start sm:self-auto px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -189,7 +189,7 @@ function timelineSlots(array $rules, string $day_type): array
         <input type="text" name="group_name" placeholder="เช่น Peak Hours, ราคามาตรฐาน, VIP Premium..." required
           autofocus
           class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-400 outline-none text-sm">
-        <button type="submit" name="add_group" style="background:#005691;"
+        <button type="submit" name="add_group" style="background:#D32F2F;"
           class="px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
           + สร้าง
         </button>
@@ -204,20 +204,20 @@ function timelineSlots(array $rules, string $day_type): array
     <!-- Stats bar -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
       <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-        <div style="background:#EDF4FA;" class="w-9 h-9 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4" style="color:#005691;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style="background:#FFEBEE;" class="w-9 h-9 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4" style="color:#D32F2F;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         </div>
         <div>
           <p class="text-xs text-gray-400">กลุ่มราคา</p>
-          <p style="color:#005691;" class="text-xl font-bold leading-tight"><?= count($groups) ?></p>
+          <p style="color:#D32F2F;" class="text-xl font-bold leading-tight"><?= count($groups) ?></p>
         </div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-        <div style="background:#EDF4FA;" class="w-9 h-9 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4" style="color:#004A7C;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style="background:#FFEBEE;" class="w-9 h-9 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4" style="color:#B71C1C;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
@@ -228,7 +228,7 @@ function timelineSlots(array $rules, string $day_type): array
         </div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-        <div style="background:#EDF4FA;" class="w-9 h-9 rounded-lg flex items-center justify-center">
+        <div style="background:#FFEBEE;" class="w-9 h-9 rounded-lg flex items-center justify-center">
           <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
@@ -240,8 +240,8 @@ function timelineSlots(array $rules, string $day_type): array
         </div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-        <div style="background:#EDF4FA;" class="w-9 h-9 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4" style="color:#005691;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style="background:#FFEBEE;" class="w-9 h-9 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4" style="color:#D32F2F;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -261,7 +261,7 @@ function timelineSlots(array $rules, string $day_type): array
           <!-- Global tab -->
           <button onclick="switchTab('global')" id="tab-btn-global"
             class="tab-btn px-5 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2
-                       <?= $activeTab === 'global' ? 'border-[#005691] text-[#005691]' : 'border-transparent text-gray-500 hover:text-gray-700' ?>">
+                       <?= $activeTab === 'global' ? 'border-[#D32F2F] text-[#D32F2F]' : 'border-transparent text-gray-500 hover:text-gray-700' ?>">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
@@ -273,13 +273,13 @@ function timelineSlots(array $rules, string $day_type): array
           <?php foreach ($groups as $g): ?>
             <button onclick="switchTab('group_<?= $g['id'] ?>')" id="tab-btn-group_<?= $g['id'] ?>"
               class="tab-btn px-5 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2
-                       <?= $activeTab === 'group_' . $g['id'] ? 'border-[#005691] text-[#005691]' : 'border-transparent text-gray-500 hover:text-gray-700' ?>">
+                       <?= $activeTab === 'group_' . $g['id'] ? 'border-[#D32F2F] text-[#D32F2F]' : 'border-transparent text-gray-500 hover:text-gray-700' ?>">
               <?= htmlspecialchars($g['name']) ?>
               <span
                 class="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500"><?= count($groupedRules[$g['id']] ?? []) ?></span>
               <?php if ($courtCountByGroup[$g['id']] > 0): ?>
                 <span class="text-xs px-1.5 py-0.5 rounded-full"
-                  style="background:#EDF4FA;color:#004A7C;"><?= $courtCountByGroup[$g['id']] ?> คอร์ต</span>
+                  style="background:#FFEBEE;color:#B71C1C;"><?= $courtCountByGroup[$g['id']] ?> คอร์ต</span>
               <?php endif; ?>
             </button>
           <?php endforeach; ?>
@@ -313,7 +313,7 @@ function timelineSlots(array $rules, string $day_type): array
                       · ใช้กับ <strong><?= $numCourts ?></strong> คอร์ต
                     <?php else: ?>
                       · <span class="text-orange-500">ยังไม่มีคอร์ตใช้กลุ่มนี้</span>
-                      · <a href="courts.php" style="color:#005691;" class="underline text-xs">ไปกำหนดที่คอร์ต</a>
+                      · <a href="courts.php" style="color:#D32F2F;" class="underline text-xs">ไปกำหนดที่คอร์ต</a>
                     <?php endif; ?>
                   </p>
                 </div>
@@ -476,7 +476,7 @@ function timelineSlots(array $rules, string $day_type): array
                         // ราคาที่จะใช้จริง
                         if ($group_id !== null) {
                           $priceLabel = 'ตามกฎกลุ่ม';
-                          $priceCls = 'text-[#004A7C]';
+                          $priceCls = 'text-[#B71C1C]';
                         } elseif ($ctIsVip && ($ct['vip_price'] ?? 0) > 0) {
                           $priceLabel = '฿' . number_format($ct['vip_price'], 0) . '/ชม. (คงที่)';
                           $priceCls = 'text-amber-600';
@@ -491,11 +491,11 @@ function timelineSlots(array $rules, string $day_type): array
                         <div class="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors">
                           <div class="flex items-center gap-2.5">
                             <?php if ($ctIsVip): ?>
-                              <div style="background:#005691;"
+                              <div style="background:#D32F2F;"
                                 class="w-7 h-7 rounded flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                                 V</div>
                             <?php else: ?>
-                              <div style="background:#E8F1F5;color:#005691;"
+                              <div style="background:#FFEBEE;color:#D32F2F;"
                                 class="w-7 h-7 rounded flex items-center justify-center font-bold text-xs flex-shrink-0">
                                 <?= $ct['court_no'] ?></div>
                             <?php endif; ?>
@@ -507,7 +507,7 @@ function timelineSlots(array $rules, string $day_type): array
                           <div class="text-right">
                             <p class="text-xs font-semibold <?= $priceCls ?>"><?= $priceLabel ?></p>
                             <a href="courts.php"
-                              class="text-xs text-gray-300 hover:text-[#005691] transition-colors">แก้ไข</a>
+                              class="text-xs text-gray-300 hover:text-[#D32F2F] transition-colors">แก้ไข</a>
                           </div>
                         </div>
                       <?php endforeach; ?>
@@ -517,7 +517,7 @@ function timelineSlots(array $rules, string $day_type): array
                   <?php if ($group_id !== null): ?>
                     <div class="rounded-xl border border-dashed border-gray-200 px-4 py-5 text-center">
                       <p class="text-xs text-orange-500 font-medium">ยังไม่มีคอร์ตใช้กลุ่มนี้</p>
-                      <a href="courts.php" style="color:#005691;"
+                      <a href="courts.php" style="color:#D32F2F;"
                         class="text-xs underline mt-1 block">ไปกำหนดที่หน้าจัดการคอร์ต →</a>
                     </div>
                   <?php endif; ?>
@@ -591,14 +591,14 @@ function timelineSlots(array $rules, string $day_type): array
                       <div class="flex gap-1.5 mt-2 flex-wrap">
                         <?php foreach ([150, 200, 300, 400, 500, 600] as $qp): ?>
                           <button type="button" onclick="setPrice(this,'<?= $tabId ?>')" data-price="<?= $qp ?>"
-                            class="px-2.5 py-1 text-xs rounded-md border border-gray-200 text-gray-500 hover:border-[#005691] hover:text-[#005691] transition-colors">
+                            class="px-2.5 py-1 text-xs rounded-md border border-gray-200 text-gray-500 hover:border-[#D32F2F] hover:text-[#D32F2F] transition-colors">
                             <?= $qp ?>
                           </button>
                         <?php endforeach; ?>
                       </div>
                     </div>
 
-                    <button type="submit" name="add" style="background:#004A7C;"
+                    <button type="submit" name="add" style="background:#B71C1C;"
                       class="w-full py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                       เพิ่มกฎนี้
                     </button>
@@ -674,13 +674,13 @@ function timelineSlots(array $rules, string $day_type): array
     function switchTab(id) {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.remove('border-[#005691]', 'text-[#005691]');
+        b.classList.remove('border-[#D32F2F]', 'text-[#D32F2F]');
         b.classList.add('border-transparent', 'text-gray-500');
       });
       var panel = document.getElementById('panel-' + id);
       var btn = document.getElementById('tab-btn-' + id);
       if (panel) panel.classList.add('active');
-      if (btn) { btn.classList.add('border-[#005691]', 'text-[#005691]'); btn.classList.remove('border-transparent', 'text-gray-500'); }
+      if (btn) { btn.classList.add('border-[#D32F2F]', 'text-[#D32F2F]'); btn.classList.remove('border-transparent', 'text-gray-500'); }
       // Update URL hash
       history.replaceState(null, '', '?tab=' + id);
     }
@@ -724,13 +724,13 @@ function timelineSlots(array $rules, string $day_type): array
       var curVal = document.getElementById((type === 'start' ? 'sd-' : 'ed-') + tabId).value;
 
       title.textContent = type === 'start' ? 'เลือกเวลาเริ่ม' : 'เลือกเวลาสิ้นสุด';
-      header.style.background = type === 'start' ? '#005691' : '#004A7C';
+      header.style.background = type === 'start' ? '#D32F2F' : '#B71C1C';
 
       // Highlight current value
       document.querySelectorAll('.modal-time-btn').forEach(function (b) {
-        b.classList.toggle('bg-[#005691]', b.dataset.time === curVal);
+        b.classList.toggle('bg-[#D32F2F]', b.dataset.time === curVal);
         b.classList.toggle('text-white', b.dataset.time === curVal);
-        b.classList.toggle('border-[#005691]', b.dataset.time === curVal);
+        b.classList.toggle('border-[#D32F2F]', b.dataset.time === curVal);
       });
       modal.classList.remove('hidden');
     }

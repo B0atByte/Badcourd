@@ -143,8 +143,8 @@ try {
   }
 
   #admin-dropdown a.nav-on {
-    background: #EBF4FA !important;
-    color: #005691 !important;
+    background: #FFEBEE !important;
+    color: #D32F2F !important;
     font-weight: 600;
   }
 
@@ -172,7 +172,7 @@ try {
   }
 </style>
 
-<nav style="background:#005691;" class="sticky top-0 z-50 shadow-md">
+<nav style="background:#D32F2F;" class="sticky top-0 z-50 shadow-md">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-14">
 
@@ -188,17 +188,17 @@ try {
 
         <!-- Main menus -->
         <a href="/timetable_detail.php"
-          class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          class="px-3 py-2 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
           ตารางคอร์ต
         </a>
         <a href="/bookings/"
-          class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          class="px-3 py-2 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
           การจอง
         </a>
 
 
         <a href="/members/search.php"
-          class="px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          class="px-3 py-2 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
           สมาชิก
         </a>
 
@@ -216,7 +216,7 @@ try {
         <?php if ($hasAnyManagePerm): ?>
           <div class="relative" id="admin-dd-wrap">
             <button id="admin-dd-btn" type="button"
-              class="flex items-center gap-1.5 px-3 py-2 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+              class="flex items-center gap-1.5 px-3 py-2 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -345,7 +345,7 @@ try {
 
         <!-- Username -->
         <?php if (!empty($_SESSION['user'])): ?>
-          <span class="text-sm text-blue-200 px-2 hidden lg:inline">
+          <span class="text-sm text-red-200 px-2 hidden lg:inline">
             <?= $_username ?>
           </span>
         <?php endif; ?>
@@ -379,7 +379,7 @@ try {
     <div class="px-4 py-3 space-y-0.5">
 
       <?php if (!empty($_SESSION['user'])): ?>
-        <div class="flex items-center gap-2 py-2 px-3 mb-2 text-sm text-blue-200 border-b border-white/10">
+        <div class="flex items-center gap-2 py-2 px-3 mb-2 text-sm text-red-200 border-b border-white/10">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -392,9 +392,9 @@ try {
       <?php endif; ?>
 
       <!-- Main menus -->
-      <p class="text-xs text-blue-300/60 uppercase tracking-wider px-3 pt-1 pb-0.5 font-medium">เมนูหลัก</p>
+      <p class="text-xs text-red-300/60 uppercase tracking-wider px-3 pt-1 pb-0.5 font-medium">เมนูหลัก</p>
       <a href="/timetable_detail.php"
-        class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+        class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
         <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -402,7 +402,7 @@ try {
         ตารางคอร์ต
       </a>
       <a href="/bookings/"
-        class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+        class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
         <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -412,7 +412,7 @@ try {
 
 
       <a href="/members/search.php"
-        class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+        class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
         <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -423,48 +423,48 @@ try {
       <!-- Manage menus: admin หรือ user ที่มีสิทธิ์ -->
       <?php if ($hasAnyManagePerm): ?>
         <div class="border-t border-white/10 mt-2 pt-2">
-          <p class="text-xs text-blue-300/60 uppercase tracking-wider px-3 pb-0.5 font-medium">จัดการ</p>
+          <p class="text-xs text-red-300/60 uppercase tracking-wider px-3 pb-0.5 font-medium">จัดการ</p>
           <?php if (can('courts')): ?>
             <a href="/admin/courts.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">คอร์ต</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">คอร์ต</a>
           <?php endif; ?>
           <?php if (can('members')): ?>
             <a href="/admin/members.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">จัดการสมาชิก</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">จัดการสมาชิก</a>
           <?php endif; ?>
           <?php if (can('promotions')): ?>
             <a href="/admin/promotions.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">โปรโมชั่น</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">โปรโมชั่น</a>
           <?php endif; ?>
           <?php if (can('yoga_classes')): ?>
             <a href="/admin/yoga_classes.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">คลาสโยคะ</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">คลาสโยคะ</a>
           <?php endif; ?>
           <?php if (can('yoga_packages')): ?>
             <a href="/admin/yoga_packages.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">แพ็กเกจโยคะ</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">แพ็กเกจโยคะ</a>
           <?php endif; ?>
           <?php if (can('badminton_packages')): ?>
             <a href="/admin/badminton_packages.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">แพ็กเกจแบดมินตัน</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">แพ็กเกจแบดมินตัน</a>
           <?php endif; ?>
           <?php if (can('reports')): ?>
             <a href="/reports/export_excel.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">รายงานแบดมินตัน</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">รายงานแบดมินตัน</a>
             <a href="/reports/export_yoga.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">รายงานโยคะ</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">รายงานโยคะ</a>
           <?php endif; ?>
           <?php if (can('pricing')): ?>
             <a href="/admin/pricing.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">ตั้งราคา</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">ตั้งราคา</a>
           <?php endif; ?>
           <?php if (can('users')): ?>
             <a href="/admin/users.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">ผู้ใช้งาน</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">ผู้ใช้งาน</a>
           <?php endif; ?>
           <?php if ($_isAdmin): ?>
             <a href="/admin/settings.php"
-              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">การตั้งค่า</a>
+              class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">การตั้งค่า</a>
           <?php endif; ?>
         </div>
       <?php endif; ?>

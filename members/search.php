@@ -89,7 +89,7 @@ $discounts = [
 
         <!-- Header -->
         <div class="mb-6">
-            <h1 style="color:#005691;" class="text-2xl font-bold mb-2">ค้นหาสมาชิก</h1>
+            <h1 style="color:#D32F2F;" class="text-2xl font-bold mb-2">ค้นหาสมาชิก</h1>
             <p class="text-gray-600 text-sm">ค้นหาสมาชิกด้วยเบอร์โทรศัพท์หรือชื่อ</p>
         </div>
 
@@ -122,7 +122,7 @@ $discounts = [
                         <option value="all" <?= $per_page === 0 ? 'selected' : '' ?>>ทั้งหมด</option>
                     </select>
                     <div class="flex-1"></div>
-                    <button type="submit" style="background:#005691;"
+                    <button type="submit" style="background:#D32F2F;"
                         class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         ค้นหา
                     </button>
@@ -140,7 +140,7 @@ $discounts = [
         <?php if ($search !== '' || $level_filter !== ''): ?>
             <div class="mb-4 flex items-center justify-between">
                 <p class="text-sm text-gray-600">
-                    พบ <span class="font-semibold" style="color:#005691;"><?= number_format($totalRecords) ?></span> รายการ
+                    พบ <span class="font-semibold" style="color:#D32F2F;"><?= number_format($totalRecords) ?></span> รายการ
                 </p>
                 <?php if ($per_page > 0 && $totalPages > 1): ?>
                     <p class="text-xs text-gray-400">หน้า <?= $page ?>/<?= $totalPages ?></p>
@@ -194,7 +194,7 @@ $discounts = [
                             <?php if ($discount > 0): ?>
                                 <div class="flex justify-between text-sm">
                                     <span class="text-gray-500">ส่วนลด</span>
-                                    <span class="font-semibold" style="color:#005691;"><?= $discount ?>%</span>
+                                    <span class="font-semibold" style="color:#D32F2F;"><?= $discount ?>%</span>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -207,7 +207,7 @@ $discounts = [
                             <span>สมัคร: <?= date('d/m/Y', strtotime($member['joined_date'])) ?></span>
                         </div>
 
-                        <a href="/members/profile.php?id=<?= $member['id'] ?>" style="background:#E8F1F5; color:#005691;"
+                        <a href="/members/profile.php?id=<?= $member['id'] ?>" style="background:#FFEBEE; color:#D32F2F;"
                             class="block w-full py-2.5 text-center text-sm font-medium rounded-lg hover:opacity-80 transition-opacity">
                             ดูโปรไฟล์
                         </a>

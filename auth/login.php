@@ -105,17 +105,17 @@ function loginGetCourtName(array $c): string
         }
 
         .bk-booked {
-            background: #004A7C;
+            background: #B71C1C;
             color: #fff;
         }
 
         .bk-vip {
-            background: #005691;
+            background: #D32F2F;
             color: #fff;
         }
 
         .bk-free {
-            background: #E8F1F5;
+            background: #FFEBEE;
             color: #888;
         }
 
@@ -135,7 +135,7 @@ function loginGetCourtName(array $c): string
         <!-- Logo & Title -->
         <div class="text-center mb-8">
             <img src="/logo/BPL.png" alt="BPL Logo" class="w-16 h-16 object-contain mx-auto mb-4 rounded-xl shadow">
-            <h1 style="color:#005691;" class="text-2xl font-bold">BARGAIN SPORT</h1>
+            <h1 style="color:#D32F2F;" class="text-2xl font-bold">BARGAIN SPORT</h1>
             <p class="text-gray-500 text-sm mt-1">ระบบจองคอร์ตแบดมินตัน</p>
         </div>
 
@@ -152,14 +152,14 @@ function loginGetCourtName(array $c): string
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อผู้ใช้</label>
                     <input type="text" name="username" required autofocus placeholder="กรอกชื่อผู้ใช้"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none transition-all text-sm">
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none transition-all text-sm">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">รหัสผ่าน</label>
                     <input type="password" name="password" required placeholder="กรอกรหัสผ่าน"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#005691] focus:ring-2 focus:ring-[#005691]/20 outline-none transition-all text-sm">
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F]/20 outline-none transition-all text-sm">
                 </div>
-                <button type="submit" style="background:#005691;"
+                <button type="submit" style="background:#D32F2F;"
                     class="w-full py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm mt-2">
                     เข้าสู่ระบบ
                 </button>
@@ -169,7 +169,7 @@ function loginGetCourtName(array $c): string
         <!-- ปุ่มดูตาราง -->
         <div class="mt-4 text-center">
             <button onclick="document.getElementById('timetableModal').classList.remove('hidden')"
-                class="w-full py-2.5 border border-gray-300 bg-white text-gray-600 rounded-xl text-sm font-medium hover:border-[#005691] hover:text-[#005691] transition-colors">
+                class="w-full py-2.5 border border-gray-300 bg-white text-gray-600 rounded-xl text-sm font-medium hover:border-[#D32F2F] hover:text-[#D32F2F] transition-colors">
                 ดูตารางการจองวันนี้
             </button>
         </div>
@@ -183,7 +183,7 @@ function loginGetCourtName(array $c): string
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
 
             <!-- Modal header -->
-            <div style="background:#005691;" class="px-5 py-4 flex items-center justify-between flex-shrink-0">
+            <div style="background:#D32F2F;" class="px-5 py-4 flex items-center justify-between flex-shrink-0">
                 <div>
                     <p class="text-white font-semibold">ตารางการจองวันนี้</p>
                     <p class="text-blue-200 text-xs mt-0.5"><?= $thaiDate ?> &nbsp;&middot;&nbsp;
@@ -196,13 +196,13 @@ function loginGetCourtName(array $c): string
             <!-- Legend -->
             <div class="px-5 py-2 border-b border-gray-100 flex gap-5 flex-shrink-0 bg-gray-50">
                 <div class="flex items-center gap-1.5 text-xs text-gray-500">
-                    <div class="w-3 h-3 rounded" style="background:#E8F1F5;border:1px solid #d1d5db;"></div>ว่าง
+                    <div class="w-3 h-3 rounded" style="background:#FFEBEE;border:1px solid #d1d5db;"></div>ว่าง
                 </div>
                 <div class="flex items-center gap-1.5 text-xs text-gray-500">
-                    <div class="w-3 h-3 rounded" style="background:#004A7C;"></div>จองแล้ว (ปกติ)
+                    <div class="w-3 h-3 rounded" style="background:#B71C1C;"></div>จองแล้ว (ปกติ)
                 </div>
                 <div class="flex items-center gap-1.5 text-xs text-gray-500">
-                    <div class="w-3 h-3 rounded" style="background:#005691;"></div>จองแล้ว (VIP)
+                    <div class="w-3 h-3 rounded" style="background:#D32F2F;"></div>จองแล้ว (VIP)
                 </div>
             </div>
 
@@ -211,7 +211,7 @@ function loginGetCourtName(array $c): string
 
                 <?php if (!empty($vipCourts)): ?>
                     <div>
-                        <h3 class="text-xs font-semibold mb-2" style="color:#004A7C;">ห้อง VIP</h3>
+                        <h3 class="text-xs font-semibold mb-2" style="color:#B71C1C;">ห้อง VIP</h3>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             <?php foreach ($vipCourts as $c):
                                 $name = loginGetCourtName($c);
@@ -219,8 +219,8 @@ function loginGetCourtName(array $c): string
                                 ?>
                                 <div class="court-card">
                                     <div class="text-xs font-semibold mb-2 pb-1.5 border-b border-gray-100 flex items-center gap-1.5 truncate"
-                                        style="color:#005691;">
-                                        <span style="background:#005691;"
+                                        style="color:#D32F2F;">
+                                        <span style="background:#D32F2F;"
                                             class="w-4 h-4 rounded flex items-center justify-center text-white font-bold text-xs flex-shrink-0">V</span>
                                         <span class="truncate"><?= htmlspecialchars($name) ?></span>
                                     </div>
@@ -252,7 +252,7 @@ function loginGetCourtName(array $c): string
 
                 <?php if (!empty($normalCourts)): ?>
                     <div>
-                        <h3 class="text-xs font-semibold mb-2" style="color:#005691;">คอร์ตปกติ</h3>
+                        <h3 class="text-xs font-semibold mb-2" style="color:#D32F2F;">คอร์ตปกติ</h3>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             <?php foreach ($normalCourts as $c):
                                 $name = loginGetCourtName($c);
@@ -260,8 +260,8 @@ function loginGetCourtName(array $c): string
                                 ?>
                                 <div class="court-card">
                                     <div class="text-xs font-semibold mb-2 pb-1.5 border-b border-gray-100 flex items-center gap-1.5"
-                                        style="color:#005691;">
-                                        <span style="background:#E8F1F5;color:#005691;"
+                                        style="color:#D32F2F;">
+                                        <span style="background:#FFEBEE;color:#D32F2F;"
                                             class="w-4 h-4 rounded flex items-center justify-center font-bold text-xs flex-shrink-0"><?= $c['court_no'] ?></span>
                                         <span class="truncate"><?= htmlspecialchars($name) ?></span>
                                     </div>
@@ -295,7 +295,7 @@ function loginGetCourtName(array $c): string
 
             <!-- Modal footer -->
             <div class="px-5 py-3 border-t border-gray-100 flex justify-between items-center flex-shrink-0 bg-gray-50">
-                <a href="/timetable.php" class="text-xs" style="color:#005691;">ดูตารางแบบเต็ม</a>
+                <a href="/timetable.php" class="text-xs" style="color:#D32F2F;">ดูตารางแบบเต็ม</a>
                 <button onclick="document.getElementById('timetableModal').classList.add('hidden')"
                     class="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200 transition-colors">
                     ปิด

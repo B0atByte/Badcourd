@@ -179,7 +179,7 @@ $stats = $pdo->query("
     <!-- ── Header ── -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
       <div>
-        <h1 class="text-2xl font-bold" style="color:#005691;">แพ็กเกจโยคะสมาชิก</h1>
+        <h1 class="text-2xl font-bold" style="color:#D32F2F;">แพ็กเกจโยคะสมาชิก</h1>
         <p class="text-gray-500 text-sm">จัดการและขายแพ็กเกจให้ลูกค้า</p>
       </div>
       <div class="flex gap-2 flex-wrap">
@@ -189,12 +189,12 @@ $stats = $pdo->query("
         </a>
         <button onclick="document.getElementById('addTypeModal').classList.remove('hidden')"
           class="flex items-center gap-1.5 px-4 py-2 text-sm border rounded-lg font-medium hover:opacity-90 transition-opacity"
-          style="color:#005691;border-color:#005691;">
+          style="color:#D32F2F;border-color:#D32F2F;">
           + ประเภทแพ็กเกจ
         </button>
         <button onclick="document.getElementById('sellModal').classList.remove('hidden')"
           class="flex items-center gap-1.5 px-4 py-2 text-sm text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
-          style="background:#005691;">
+          style="background:#D32F2F;">
           + ขายแพ็กเกจ
         </button>
       </div>
@@ -209,7 +209,7 @@ $stats = $pdo->query("
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
         <p class="text-xs text-gray-400 mb-1">ยังใช้งานได้</p>
-        <p class="text-2xl font-bold" style="color:#005691;"><?= $stats['active_pkgs'] ?? 0 ?></p>
+        <p class="text-2xl font-bold" style="color:#D32F2F;"><?= $stats['active_pkgs'] ?? 0 ?></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
         <p class="text-xs text-gray-400 mb-1">ครั้งที่เหลือรวม</p>
@@ -227,7 +227,7 @@ $stats = $pdo->query("
         </div>
         <button onclick="document.getElementById('addTypeModal').classList.remove('hidden')"
           class="text-xs px-3 py-1.5 rounded-lg border font-medium hover:bg-blue-50 transition-colors"
-          style="color:#005691;border-color:#005691;">+ เพิ่มประเภท</button>
+          style="color:#D32F2F;border-color:#D32F2F;">+ เพิ่มประเภท</button>
       </div>
       <!-- Search + Per page -->
       <div class="px-4 py-2.5 border-b border-gray-100 flex flex-col sm:flex-row gap-2 items-center">
@@ -323,7 +323,7 @@ $stats = $pdo->query("
       <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
         <span class="text-sm font-semibold text-gray-700">แพ็กเกจสมาชิก
           <span class="font-normal text-gray-400 ml-1">ทั้งหมด <span class="font-bold"
-              style="color:#005691;"><?= count($memberPkgs) ?></span> รายการ</span>
+              style="color:#D32F2F;"><?= count($memberPkgs) ?></span> รายการ</span>
         </span>
       </div>
       <!-- Search + Per page -->
@@ -469,7 +469,7 @@ $stats = $pdo->query("
         </div>
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             บันทึก
           </button>
           <button type="button" onclick="closeTypeModal()"
@@ -530,7 +530,7 @@ $stats = $pdo->query("
         </div>
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             ยืนยันขาย
           </button>
           <button type="button" onclick="document.getElementById('sellModal').classList.add('hidden')"
@@ -569,7 +569,7 @@ $stats = $pdo->query("
         </div>
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             บันทึก
           </button>
           <button type="button" onclick="document.getElementById('editCustomerModal').classList.add('hidden')"
@@ -664,7 +664,7 @@ $stats = $pdo->query("
         btn.textContent = label;
         if (isActive) {
           btn.className = 'min-w-[2rem] h-8 px-2 text-xs rounded border border-transparent text-white transition-colors';
-          btn.style.background = '#005691';
+          btn.style.background = '#D32F2F';
         } else if (enabled) {
           btn.className = 'min-w-[2rem] h-8 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer';
           btn.addEventListener('click', onClick);

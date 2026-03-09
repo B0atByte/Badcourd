@@ -66,11 +66,20 @@
 
 ---
 
+### แพ็กเกจคอร์ตแบดมินตัน (`admin/badminton_packages.php`)
+
+- CRUD ประเภทแพ็กเกจแบดมินตัน (ชั่วโมงรวม / ราคา / วันหมดอายุ)
+- ขายแพ็กเกจให้สมาชิก — ชำระครั้งเดียว ใช้จองได้หลายครั้ง
+- อัปโหลดสลิปชำระแพ็กเกจ (drag-and-drop / preview / lightbox)
+- ปรับข้อมูลย้อนหลัง (hours_used, purchase_date, expiry_date, notes)
+- Progress bar ชั่วโมงคงเหลือ, ค้นหา/pagination
+- แสดงข้อมูลโปรโมชั่น + แพ็กเกจใน timetable modal
+
 ### Admin
 
 - จัดการคอร์ต, ราคา, สมาชิก, โปรโมชั่น, ผู้ใช้ระบบ
 - จัดการคลาสโยคะ & แพ็กเกจ
-- Export รายงาน Excel
+- Export รายงาน Excel (2 sheets: การจอง + ยอดซื้อแพ็กเกจ)
 
 ---
 
@@ -117,14 +126,16 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 ```
 /
 ├── admin/
-│   ├── courts.php          จัดการคอร์ต
-│   ├── members.php         จัดการสมาชิก (เพิ่ม/แก้ไข/ลบ/ปรับแต้ม)
-│   ├── pricing.php         จัดการราคา
-│   ├── promotions.php      โปรโมชั่น
-│   ├── users.php           จัดการผู้ใช้ระบบ
-│   ├── yoga_classes.php    จัดการคลาสโยคะ
-│   ├── yoga_packages.php   จัดการแพ็กเกจโยคะ
-│   └── yoga_pkg_ajax.php   AJAX ค้นหาแพ็กเกจ
+│   ├── courts.php                   จัดการคอร์ต
+│   ├── members.php                  จัดการสมาชิก (เพิ่ม/แก้ไข/ลบ/ปรับแต้ม)
+│   ├── pricing.php                  จัดการราคา
+│   ├── promotions.php               โปรโมชั่น
+│   ├── users.php                    จัดการผู้ใช้ระบบ
+│   ├── badminton_packages.php       จัดการแพ็กเกจแบดมินตัน
+│   ├── upload_badminton_slip_ajax.php AJAX อัปโหลดสลิปแพ็กเกจแบดมินตัน
+│   ├── yoga_classes.php             จัดการคลาสโยคะ
+│   ├── yoga_packages.php            จัดการแพ็กเกจโยคะ
+│   └── yoga_pkg_ajax.php            AJAX ค้นหาแพ็กเกจ
 ├── auth/                   login, logout, guard middleware
 ├── bookings/               create, index, update, cancel, AJAX endpoints
 ├── config/                 db.php (PDO connection)
@@ -148,7 +159,7 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 | Table | Description |
 |---|---|
 | courts | คอร์ต (court_type, vip_room_name, pricing_group_id) |
-| bookings | การจอง พร้อม payment_slip_path |
+| bookings | การจอง พร้อม payment_slip_path, member_badminton_package_id |
 | pricing_rules | กฎราคาตาม group_id, day_type, ช่วงเวลา |
 | pricing_groups | กลุ่มราคา |
 | members | สมาชิก พร้อม level และ points |
@@ -156,6 +167,8 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 | users | ผู้ใช้ระบบ (admin / user) |
 | booking_logs | log การเปลี่ยนแปลงการจอง |
 | point_transactions | ประวัติ points สมาชิก |
+| badminton_package_types | ประเภทแพ็กเกจแบดมินตัน (ชั่วโมง / โบนัส / ราคา) |
+| member_badminton_packages | แพ็กเกจที่สมาชิกซื้อ + hours_used + payment_slip_path |
 
 ### Yoga
 
@@ -169,6 +182,35 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 ---
 
 ## Changelog
+
+### v1.6 — 2026-03-09
+**New Theme & Badminton Package System**
+
+**UI Theme**
+- เปลี่ยน color theme ทั้งเว็บจากน้ำเงิน → แดง/ส้ม/เหลือง
+  - Primary: `#D32F2F` | Dark: `#B71C1C` | Orange: `#F57C00` | Yellow: `#FBC02D` | Teal: `#00897B`
+- อัปเดต 17 ไฟล์ (header, login, timetable, bookings, admin pages, reports)
+
+**รายงาน Excel (export_excel.php)**
+- เพิ่ม Sheet 2 "ยอดซื้อแพ็กเกจ" — แสดงยอดชำระครั้งเดียวของแต่ละแพ็กเกจแบดมินตัน
+- เพิ่ม stats card ยอดรายได้จากแพ็กเกจ + preview table ในหน้า HTML
+- Sheet 1 เพิ่ม 3 คอลัมน์: แพ็กเกจที่ใช้, ชม.จากแพ็กเกจ, สลิปแพ็กเกจ
+
+### v1.5 — 2026-03-09
+**Badminton Package System**
+
+**แพ็กเกจคอร์ตแบดมินตัน**
+- สร้าง `admin/badminton_packages.php` — แสดงรายการสมาชิกแบบเดียวกับ yoga packages
+- อัปโหลดสลิปชำระแพ็กเกจ: drag-and-drop, preview, lightbox
+- ปรับข้อมูลย้อนหลัง: hours_used, purchase_date, expiry_date, notes
+- Progress bar ชั่วโมงคงเหลือ, ค้นหา/pagination
+- สร้าง `admin/upload_badminton_slip_ajax.php` — AJAX endpoint อัปโหลดสลิป (ตรวจ MIME, max 10MB)
+
+**Timetable**
+- `timetable_detail.php` — modal แสดงข้อมูลโปรโมชั่น + แพ็กเกจแบดมินตัน (ชม.ใช้/คงเหลือ/progress bar/สลิป)
+
+**Database**
+- `ALTER TABLE member_badminton_packages ADD COLUMN payment_slip_path VARCHAR(255) NULL`
 
 ### v1.4 — 2026-03-06
 **Bug Fixes & Security**

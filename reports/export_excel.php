@@ -31,10 +31,15 @@ if (isset($_GET['download'])) {
   $stmt = $pdo->prepare("
         SELECT b.*,
                c.court_no, c.vip_room_name, c.is_vip, c.court_type,
-               p.name AS promo_name, p.code AS promo_code
+               p.name AS promo_name, p.code AS promo_code,
+               bpt.name AS pkg_type_name,
+               mbp.hours_total AS pkg_hours_total, mbp.hours_used AS pkg_hours_used,
+               mbp.payment_slip_path AS pkg_slip_path
         FROM bookings b
         JOIN courts c ON b.court_id = c.id
         LEFT JOIN promotions p ON b.promotion_id = p.id
+        LEFT JOIN member_badminton_packages mbp ON b.member_badminton_package_id = mbp.id
+        LEFT JOIN badminton_package_types bpt ON mbp.badminton_package_type_id = bpt.id
         WHERE DATE(b.created_at) BETWEEN :f AND :t
         ORDER BY b.created_at DESC
     ");
@@ -49,18 +54,18 @@ if (isset($_GET['download'])) {
   $sheet->setCellValue('A1', 'รายงานการจองคอร์ตแบดมินตัน BARGAIN SPORT');
   $sheet->setCellValue('A2', 'ช่วงเวลา: ' . date('d/m/Y', strtotime($from)) . ' ถึง ' . date('d/m/Y', strtotime($to)));
   $sheet->setCellValue('A3', 'ออกรายงานเมื่อ: ' . date('d/m/Y H:i:s'));
-  $sheet->mergeCells('A1:Q1');
-  $sheet->mergeCells('A2:Q2');
-  $sheet->mergeCells('A3:Q3');
+  $sheet->mergeCells('A1:T1');
+  $sheet->mergeCells('A2:T2');
+  $sheet->mergeCells('A3:T3');
 
   $titleStyle = [
     'font' => ['bold' => true, 'size' => 13, 'color' => ['rgb' => 'FFFFFF']],
-    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '005691']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D32F2F']],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
   ];
   $subStyle = [
-    'font' => ['size' => 10, 'color' => ['rgb' => '004A7C']],
-    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F1F5']],
+    'font' => ['size' => 10, 'color' => ['rgb' => 'B71C1C']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFEBEE']],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
   ];
   $sheet->getStyle('A1')->applyFromArray($titleStyle);
@@ -85,16 +90,26 @@ if (isset($_GET['download'])) {
     'ส่วนลด %',
     'รวมเงิน',
     'สถานะ',
-    'มีสลิป'
+    'มีสลิป',
+    'แพ็กเกจที่ใช้',
+    'ชม.จากแพ็กเกจ',
+    'สลิปแพ็กเกจ',
   ];
   $sheet->fromArray([$headers], null, 'A5');
   $headerStyle = [
     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '004A7C']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'B71C1C']],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CCCCCC']]],
   ];
-  $sheet->getStyle('A5:Q5')->applyFromArray($headerStyle);
+  $sheet->getStyle('A5:T5')->applyFromArray($headerStyle);
+  // Package columns header — highlight differently
+  $sheet->getStyle('R5:T5')->applyFromArray([
+    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1d4ed8']],
+    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CCCCCC']]],
+  ]);
   $sheet->getRowDimension(5)->setRowHeight(20);
 
   // ---- Data Rows ----
@@ -124,6 +139,16 @@ if (isset($_GET['download'])) {
     $promoPercent = !empty($x['promotion_discount_percent']) ? $x['promotion_discount_percent'] . '%' : '';
     $hasSlip = !empty($x['payment_slip_path']) ? 'มีสลิป' : '-';
 
+    // Package columns
+    $pkgName    = $x['pkg_type_name'] ?? '';
+    $pkgHoursTotal = (int)($x['pkg_hours_total'] ?? 0);
+    $pkgHoursUsed  = (int)($x['pkg_hours_used']  ?? 0);
+    $pkgUsedThis   = (int)($x['used_package_hours'] ?? 0);
+    $pkgRemaining  = max(0, $pkgHoursTotal - $pkgHoursUsed);
+    $pkgLabel   = $pkgName ? "{$pkgName} (ใช้จองนี้ {$pkgUsedThis} ชม., รวมใช้ {$pkgHoursUsed}/{$pkgHoursTotal} ชม., เหลือ {$pkgRemaining} ชม.)" : '';
+    $pkgHoursLabel = $pkgName ? "{$pkgUsedThis} ชม." : '';
+    $pkgSlip    = !empty($x['pkg_slip_path']) ? 'มีสลิปแพ็กเกจ' : ($pkgName ? 'ไม่มีสลิป' : '');
+
     $sheet->fromArray([
       [
         $no,
@@ -143,12 +168,15 @@ if (isset($_GET['download'])) {
         (float) $x['total_amount'],
         $isBooked ? 'จองแล้ว' : 'ยกเลิก',
         $hasSlip,
+        $pkgLabel,
+        $pkgHoursLabel,
+        $pkgSlip,
       ]
     ], null, 'A' . $r);
 
     // Zebra stripe
     if ($no % 2 === 0) {
-      $sheet->getStyle("A{$r}:Q{$r}")->applyFromArray([
+      $sheet->getStyle("A{$r}:T{$r}")->applyFromArray([
         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F7FAFD']],
       ]);
     }
@@ -161,9 +189,16 @@ if (isset($_GET['download'])) {
       $sheet->getStyle($statusCell)->getFont()->getColor()->setRGB('6b7280');
     }
 
-    // สลิป color
+    // สลิปจอง color
     if (!empty($x['payment_slip_path'])) {
       $sheet->getStyle('Q' . $r)->getFont()->getColor()->setRGB('7c3aed');
+    }
+
+    // สลิปแพ็กเกจ color
+    if (!empty($x['pkg_slip_path'])) {
+      $sheet->getStyle('T' . $r)->getFont()->getColor()->setRGB('1d4ed8');
+    } elseif ($pkgName) {
+      $sheet->getStyle('T' . $r)->getFont()->getColor()->setRGB('9ca3af');
     }
 
     if ($isBooked) {
@@ -186,15 +221,19 @@ if (isset($_GET['download'])) {
   $sheet->setCellValue('A' . $r, 'สรุป');
   $sheet->getStyle('A' . $r)->applyFromArray([
     'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
-    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '005691']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D32F2F']],
   ]);
   $r++;
+  $pkgBookingCount = count(array_filter($rows, fn($x) => !empty($x['member_badminton_package_id'])));
+  $pkgSlipCount    = count(array_filter($rows, fn($x) => !empty($x['pkg_slip_path'])));
   $summaryData = [
     ['จำนวนรายการทั้งหมด', count($rows) . ' รายการ'],
     ['รายการที่จองสำเร็จ', (count($rows) - $cancelCount) . ' รายการ'],
     ['รายการที่ยกเลิก', $cancelCount . ' รายการ'],
     ['ใช้โปรโมชั่น', $promoCount . ' รายการ'],
     ['มีสลิปแนบ', $slipCount . ' รายการ'],
+    ['จองด้วยแพ็กเกจ', $pkgBookingCount . ' รายการ'],
+    ['มีสลิปแพ็กเกจ', $pkgSlipCount . ' รายการ'],
     ['ยอดส่วนลดรวม', '฿' . number_format($totalDiscount, 2)],
     ['รายได้รวมทั้งหมด', '฿' . number_format($totalRevenue, 2)],
   ];
@@ -205,15 +244,144 @@ if (isset($_GET['download'])) {
   }
 
   // ---- Column Widths ----
-  $widths = [8, 14, 12, 22, 18, 14, 12, 10, 10, 10, 12, 13, 20, 10, 13, 12, 10];
-  $cols = range('A', 'Q');
+  $widths = [8, 14, 12, 22, 18, 14, 12, 10, 10, 10, 12, 13, 20, 10, 13, 12, 10, 40, 14, 14];
+  $cols = array_merge(range('A', 'Z'), ['AA','AB','AC','AD']);
   foreach ($cols as $i => $col) {
+    if (!isset($widths[$i])) break;
     $sheet->getColumnDimension($col)->setWidth($widths[$i]);
   }
 
-  // Center align cols: A, J, H, I, P, Q
-  foreach (['A', 'H', 'I', 'J', 'P', 'Q'] as $col) {
+  // Center align cols
+  foreach (['A', 'H', 'I', 'J', 'P', 'Q', 'S', 'T'] as $col) {
     $sheet->getStyle($col . '6:' . $col . ($r - 1))
+      ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+  }
+
+  // ============================================================
+  // SHEET 2 — ยอดซื้อแพ็กเกจแบดมินตัน
+  // ============================================================
+  $pkgStmt = $pdo->prepare("
+      SELECT mbp.*,
+             bpt.name AS pkg_type_name,
+             bpt.price AS pkg_price,
+             bpt.hours_total AS pkg_type_hours,
+             bpt.bonus_hours
+      FROM member_badminton_packages mbp
+      JOIN badminton_package_types bpt ON mbp.badminton_package_type_id = bpt.id
+      WHERE mbp.purchase_date BETWEEN :f AND :t
+      ORDER BY mbp.purchase_date DESC, mbp.created_at DESC
+  ");
+  $pkgStmt->execute([':f' => $from, ':t' => $to]);
+  $pkgRows = $pkgStmt->fetchAll();
+
+  $sheet2 = $spreadsheet->createSheet();
+  $sheet2->setTitle('ยอดซื้อแพ็กเกจ');
+
+  // Title
+  $sheet2->setCellValue('A1', 'รายงานยอดซื้อแพ็กเกจแบดมินตัน BARGAIN SPORT');
+  $sheet2->setCellValue('A2', 'ช่วงเวลา: ' . date('d/m/Y', strtotime($from)) . ' ถึง ' . date('d/m/Y', strtotime($to)));
+  $sheet2->setCellValue('A3', 'ออกรายงานเมื่อ: ' . date('d/m/Y H:i:s'));
+  $sheet2->mergeCells('A1:K1');
+  $sheet2->mergeCells('A2:K2');
+  $sheet2->mergeCells('A3:K3');
+  $sheet2->getStyle('A1')->applyFromArray($titleStyle);
+  $sheet2->getStyle('A2:A3')->applyFromArray($subStyle);
+  $sheet2->getRowDimension(1)->setRowHeight(24);
+
+  // Header
+  $pkgHeaders = ['ลำดับ', 'วันที่ซื้อ', 'ชื่อสมาชิก', 'เบอร์โทร', 'แพ็กเกจ', 'ชม.รวม', 'ราคาแพ็กเกจ (฿)', 'วันหมดอายุ', 'สถานะ', 'สลิปชำระ', 'หมายเหตุ'];
+  $sheet2->fromArray([$pkgHeaders], null, 'A5');
+  $pkgHeaderStyle = [
+    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1d4ed8']],
+    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CCCCCC']]],
+  ];
+  $sheet2->getStyle('A5:K5')->applyFromArray($pkgHeaderStyle);
+  $sheet2->getRowDimension(5)->setRowHeight(20);
+
+  // Data
+  $pr = 6;
+  $pno = 1;
+  $totalPkgRevenue = 0;
+  $statusMap = ['active' => 'กำลังใช้งาน', 'expired' => 'หมดอายุ', 'exhausted' => 'ใช้หมดแล้ว'];
+  foreach ($pkgRows as $pk) {
+    $hoursLabel = $pk['hours_total'] . ' ชม.';
+    if ($pk['bonus_hours'] > 0) {
+      $hoursLabel = ($pk['pkg_type_hours'] ?? $pk['hours_total']) . '+' . $pk['bonus_hours'] . ' ชม. (รวม ' . $pk['hours_total'] . ')';
+    }
+    $statusLabel = $statusMap[$pk['status']] ?? $pk['status'];
+    $hasSlip = !empty($pk['payment_slip_path']) ? 'มีสลิป' : 'ไม่มีสลิป';
+    $expiry = !empty($pk['expiry_date']) ? date('d/m/Y', strtotime($pk['expiry_date'])) : 'ไม่กำหนด';
+    $price = (float)$pk['pkg_price'];
+
+    $sheet2->fromArray([[
+      $pno,
+      date('d/m/Y', strtotime($pk['purchase_date'])),
+      $pk['customer_name'],
+      $pk['customer_phone'],
+      $pk['pkg_type_name'],
+      $hoursLabel,
+      $price,
+      $expiry,
+      $statusLabel,
+      $hasSlip,
+      $pk['notes'] ?? '',
+    ]], null, 'A' . $pr);
+
+    // Number format for price column
+    $sheet2->getStyle('G' . $pr)->getNumberFormat()->setFormatCode('#,##0.00');
+
+    // Zebra
+    if ($pno % 2 === 0) {
+      $sheet2->getStyle("A{$pr}:K{$pr}")->applyFromArray([
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EFF6FF']],
+      ]);
+    }
+
+    // Status color
+    $statusColors = ['กำลังใช้งาน' => '15803d', 'หมดอายุ' => '9ca3af', 'ใช้หมดแล้ว' => 'dc2626'];
+    if (isset($statusColors[$statusLabel])) {
+      $sheet2->getStyle('I' . $pr)->getFont()->getColor()->setRGB($statusColors[$statusLabel]);
+    }
+    // Slip color
+    if (!empty($pk['payment_slip_path'])) {
+      $sheet2->getStyle('J' . $pr)->getFont()->getColor()->setRGB('1d4ed8');
+    } else {
+      $sheet2->getStyle('J' . $pr)->getFont()->getColor()->setRGB('9ca3af');
+    }
+
+    $totalPkgRevenue += $price;
+    $pr++;
+    $pno++;
+  }
+
+  // Summary
+  $pr += 1;
+  $sheet2->setCellValue('A' . $pr, 'สรุปยอดซื้อแพ็กเกจ');
+  $sheet2->getStyle('A' . $pr)->applyFromArray([
+    'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1d4ed8']],
+  ]);
+  $pr++;
+  $pkgSummary = [
+    ['จำนวนแพ็กเกจที่ขาย', count($pkgRows) . ' แพ็กเกจ'],
+    ['ยอดรายได้จากแพ็กเกจ', '฿' . number_format($totalPkgRevenue, 2)],
+  ];
+  foreach ($pkgSummary as $sd) {
+    $sheet2->fromArray([$sd], null, 'A' . $pr);
+    $sheet2->getStyle('A' . $pr)->getFont()->setBold(true);
+    $pr++;
+  }
+
+  // Column widths for sheet 2
+  $pkgWidths = [8, 14, 22, 16, 22, 18, 20, 16, 16, 14, 30];
+  foreach ($pkgWidths as $i => $w) {
+    $col = chr(65 + $i);
+    $sheet2->getColumnDimension($col)->setWidth($w);
+  }
+  foreach (['A', 'B', 'F', 'G', 'H', 'I', 'J'] as $col) {
+    $sheet2->getStyle($col . '6:' . $col . ($pr - 1))
       ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
   }
 
@@ -230,10 +398,15 @@ if (isset($_GET['download'])) {
 $stmt = $pdo->prepare("
     SELECT b.*,
            c.court_no, c.vip_room_name, c.is_vip, c.court_type,
-           p.name AS promo_name, p.code AS promo_code
+           p.name AS promo_name, p.code AS promo_code,
+           bpt.name AS pkg_type_name,
+           mbp.hours_total AS pkg_hours_total, mbp.hours_used AS pkg_hours_used,
+           mbp.payment_slip_path AS pkg_slip_path
     FROM bookings b
     JOIN courts c ON b.court_id = c.id
     LEFT JOIN promotions p ON b.promotion_id = p.id
+    LEFT JOIN member_badminton_packages mbp ON b.member_badminton_package_id = mbp.id
+    LEFT JOIN badminton_package_types bpt ON mbp.badminton_package_type_id = bpt.id
     WHERE DATE(b.created_at) BETWEEN :f AND :t
     ORDER BY b.created_at DESC
     LIMIT 10
@@ -254,6 +427,35 @@ $statsStmt = $pdo->prepare("
 ");
 $statsStmt->execute([':f' => $from, ':t' => $to]);
 $stats = $statsStmt->fetch();
+
+// Package purchases stats
+$pkgStatsStmt = $pdo->prepare("
+    SELECT
+        COUNT(*) AS pkg_count,
+        SUM(bpt.price) AS pkg_revenue,
+        SUM(CASE WHEN mbp.payment_slip_path IS NOT NULL THEN 1 ELSE 0 END) AS pkg_slip_count
+    FROM member_badminton_packages mbp
+    JOIN badminton_package_types bpt ON mbp.badminton_package_type_id = bpt.id
+    WHERE mbp.purchase_date BETWEEN :f AND :t
+");
+$pkgStatsStmt->execute([':f' => $from, ':t' => $to]);
+$pkgStats = $pkgStatsStmt->fetch();
+
+// Package preview rows (10 latest)
+$pkgPreviewStmt = $pdo->prepare("
+    SELECT mbp.*,
+           bpt.name AS pkg_type_name,
+           bpt.price AS pkg_price,
+           bpt.hours_total AS pkg_type_hours,
+           bpt.bonus_hours
+    FROM member_badminton_packages mbp
+    JOIN badminton_package_types bpt ON mbp.badminton_package_type_id = bpt.id
+    WHERE mbp.purchase_date BETWEEN :f AND :t
+    ORDER BY mbp.purchase_date DESC, mbp.created_at DESC
+    LIMIT 10
+");
+$pkgPreviewStmt->execute([':f' => $from, ':t' => $to]);
+$pkgPreviewRows = $pkgPreviewStmt->fetchAll();
 ?>
 <!doctype html>
 <html lang="th">
@@ -272,7 +474,7 @@ $stats = $statsStmt->fetch();
 
     <!-- Header -->
     <div class="mb-6">
-      <h1 style="color:#005691;" class="text-2xl font-bold mb-1">ออกรายงาน Excel</h1>
+      <h1 style="color:#D32F2F;" class="text-2xl font-bold mb-1">ออกรายงาน Excel</h1>
       <p class="text-gray-500 text-sm">ดาวน์โหลดรายงานการจองพร้อมข้อมูลโปรโมชั่นและสลิปในรูปแบบ Excel</p>
     </div>
 
@@ -281,11 +483,11 @@ $stats = $statsStmt->fetch();
 
       <form method="get" class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="mb-4">
-          <h3 style="color:#005691;" class="text-lg font-bold mb-1">ข้อมูลวันนี้</h3>
+          <h3 style="color:#D32F2F;" class="text-lg font-bold mb-1">ข้อมูลวันนี้</h3>
           <p class="text-sm text-gray-600">Export การจองวันที่ <?= date('d/m/Y') ?></p>
         </div>
         <input type="hidden" name="type" value="today">
-        <button type="submit" name="download" value="1" style="background:#004A7C;"
+        <button type="submit" name="download" value="1" style="background:#B71C1C;"
           class="w-full px-4 py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">
           ดาวน์โหลด Excel
         </button>
@@ -293,11 +495,11 @@ $stats = $statsStmt->fetch();
 
       <form method="get" class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="mb-4">
-          <h3 style="color:#005691;" class="text-lg font-bold mb-1">ข้อมูลทั้งหมด</h3>
+          <h3 style="color:#D32F2F;" class="text-lg font-bold mb-1">ข้อมูลทั้งหมด</h3>
           <p class="text-sm text-gray-600">Export การจองทั้งหมดตั้งแต่เริ่มต้น</p>
         </div>
         <input type="hidden" name="type" value="all">
-        <button type="submit" name="download" value="1" style="background:#004A7C;"
+        <button type="submit" name="download" value="1" style="background:#B71C1C;"
           class="w-full px-4 py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">
           ดาวน์โหลด Excel
         </button>
@@ -305,38 +507,41 @@ $stats = $statsStmt->fetch();
 
       <form method="get" class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="mb-4">
-          <h3 style="color:#005691;" class="text-lg font-bold mb-1">ช่วงเวลาที่กำหนด</h3>
+          <h3 style="color:#D32F2F;" class="text-lg font-bold mb-1">ช่วงเวลาที่กำหนด</h3>
           <p class="text-sm text-gray-600 mb-3">Export ตามช่วงเวลาที่เลือก</p>
         </div>
         <div class="space-y-3 mb-4">
           <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">วันที่เริ่มต้น</label>
             <input type="date" name="from" value="<?= htmlspecialchars($from) ?>"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] outline-none text-sm">
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] outline-none text-sm">
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">วันที่สิ้นสุด</label>
             <input type="date" name="to" value="<?= htmlspecialchars($to) ?>"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] outline-none text-sm">
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] outline-none text-sm">
           </div>
         </div>
         <input type="hidden" name="type" value="range">
-        <button type="submit" name="download" value="1" style="background:#004A7C;"
+        <button type="submit" name="download" value="1" style="background:#B71C1C;"
           class="w-full px-4 py-2.5 text-white rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">
           ดาวน์โหลด Excel
         </button>
       </form>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <!-- Stats Cards — การจอง -->
+    <div class="mb-2">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">สรุปการจองคอร์ต</h2>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <p class="text-gray-400 text-xs mb-1">รายการทั้งหมด</p>
-        <p style="color:#005691;" class="text-2xl font-bold"><?= number_format($stats['total']) ?></p>
+        <p style="color:#D32F2F;" class="text-2xl font-bold"><?= number_format($stats['total']) ?></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <p class="text-gray-400 text-xs mb-1">รายได้รวม</p>
-        <p style="color:#004A7C;" class="text-2xl font-bold">฿<?= number_format($stats['revenue'] ?? 0, 0) ?></p>
+        <p class="text-gray-400 text-xs mb-1">รายได้จองคอร์ต</p>
+        <p style="color:#B71C1C;" class="text-2xl font-bold">฿<?= number_format($stats['revenue'] ?? 0, 0) ?></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <p class="text-gray-400 text-xs mb-1">ยอดส่วนลดรวม</p>
@@ -356,10 +561,31 @@ $stats = $statsStmt->fetch();
       </div>
     </div>
 
+    <!-- Stats Cards — ยอดซื้อแพ็กเกจ -->
+    <div class="mb-2">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">สรุปยอดซื้อแพ็กเกจแบดมินตัน</h2>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-xl border-2 border-blue-200 p-4">
+        <p class="text-blue-400 text-xs mb-1">แพ็กเกจที่ขายได้</p>
+        <p class="text-2xl font-bold text-blue-700"><?= number_format($pkgStats['pkg_count'] ?? 0) ?> แพ็กเกจ</p>
+      </div>
+      <div class="bg-white rounded-xl border-2 border-blue-200 p-4">
+        <p class="text-blue-400 text-xs mb-1">รายได้จากแพ็กเกจ</p>
+        <p class="text-2xl font-bold text-blue-700">฿<?= number_format($pkgStats['pkg_revenue'] ?? 0, 0) ?></p>
+        <p class="text-xs text-gray-400 mt-1">ชำระครั้งเดียว</p>
+      </div>
+      <div class="bg-white rounded-xl border-2 border-blue-200 p-4">
+        <p class="text-blue-400 text-xs mb-1">มีสลิปชำระแพ็กเกจ</p>
+        <p class="text-2xl font-bold text-blue-700"><?= number_format($pkgStats['pkg_slip_count'] ?? 0) ?></p>
+        <p class="text-xs text-gray-400 mt-1">จาก <?= $pkgStats['pkg_count'] ?? 0 ?> แพ็กเกจ</p>
+      </div>
+    </div>
+
     <!-- Preview Section -->
     <?php if (count($previewRows) > 0): ?>
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-        <div style="background:#005691;" class="px-6 py-4 flex justify-between items-center">
+        <div style="background:#D32F2F;" class="px-6 py-4 flex justify-between items-center">
           <h2 class="text-sm font-bold text-white">ตัวอย่างข้อมูล (10 รายการแรก)</h2>
           <span class="text-blue-200 text-xs">คอลัมน์ Excel: ลำดับ · วันที่ · คอร์ต · ผู้จอง · เบอร์ · วันใช้ · เวลา · ชม.
             · ราคา · ส่วนลด · โปรโมชั่น · % · รวม · สถานะ · สลิป</span>
@@ -369,7 +595,7 @@ $stats = $statsStmt->fetch();
         <div class="hidden lg:block overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr style="background:#004A7C;" class="text-white text-xs">
+              <tr style="background:#B71C1C;" class="text-white text-xs">
                 <th class="px-3 py-3 text-center font-medium">#</th>
                 <th class="px-3 py-3 text-left font-medium">วันที่ทำรายการ</th>
                 <th class="px-3 py-3 text-center font-medium">คอร์ต/ห้อง</th>
@@ -383,7 +609,10 @@ $stats = $statsStmt->fetch();
                 <th class="px-3 py-3 text-center font-medium">โปรโมชั่น</th>
                 <th class="px-3 py-3 text-right font-medium">รวมเงิน</th>
                 <th class="px-3 py-3 text-center font-medium">สถานะ</th>
-                <th class="px-3 py-3 text-center font-medium">สลิป</th>
+                <th class="px-3 py-3 text-center font-medium">สลิปจอง</th>
+                <th class="px-3 py-3 text-center font-medium" style="background:#1d4ed8;">แพ็กเกจที่ใช้</th>
+                <th class="px-3 py-3 text-center font-medium" style="background:#1d4ed8;">ชม.แพ็กเกจ</th>
+                <th class="px-3 py-3 text-center font-medium" style="background:#1d4ed8;">สลิปแพ็กเกจ</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -395,6 +624,11 @@ $stats = $statsStmt->fetch();
                 $courtName = $isVip ? ($x['vip_room_name'] ?? 'ห้อง VIP') : 'คอร์ต ' . $x['court_no'];
                 $isBooked = $x['status'] === 'booked';
                 $promoLabel = !empty($x['promo_name']) ? $x['promo_name'] : (!empty($x['promo_code']) ? $x['promo_code'] : '');
+                $pkgName = $x['pkg_type_name'] ?? '';
+                $pkgTotal = (int)($x['pkg_hours_total'] ?? 0);
+                $pkgUsed  = (int)($x['pkg_hours_used']  ?? 0);
+                $pkgUsedThis = (int)($x['used_package_hours'] ?? 0);
+                $pkgRemain = max(0, $pkgTotal - $pkgUsed);
                 ?>
                 <tr class="hover:bg-gray-50 transition-colors <?= $index % 2 === 1 ? 'bg-[#F7FAFD]' : '' ?>">
                   <td class="px-3 py-3 text-center text-gray-500 text-xs"><?= $index + 1 ?></td>
@@ -434,17 +668,41 @@ $stats = $statsStmt->fetch();
                       <span class="text-gray-300">-</span>
                     <?php endif; ?>
                   </td>
-                  <td style="color:#004A7C;" class="px-3 py-3 text-right font-bold text-xs">
+                  <td style="color:#B71C1C;" class="px-3 py-3 text-right font-bold text-xs">
                     ฿<?= number_format($x['total_amount'], 0) ?></td>
                   <td class="px-3 py-3 text-center">
-                    <span
-                      class="text-[10px] px-2 py-0.5 rounded-full <?= $isBooked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' ?>">
+                    <span class="text-[10px] px-2 py-0.5 rounded-full <?= $isBooked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' ?>">
                       <?= $isBooked ? 'จองแล้ว' : 'ยกเลิก' ?>
                     </span>
                   </td>
                   <td class="px-3 py-3 text-center text-xs">
                     <?php if (!empty($x['payment_slip_path'])): ?>
                       <span class="text-indigo-600 font-medium">✓ มีสลิป</span>
+                    <?php else: ?>
+                      <span class="text-gray-300">-</span>
+                    <?php endif; ?>
+                  </td>
+                  <!-- Package columns -->
+                  <td class="px-3 py-3 text-xs" style="background:#eff6ff;">
+                    <?php if ($pkgName): ?>
+                      <div class="font-medium text-blue-700"><?= htmlspecialchars($pkgName) ?></div>
+                      <div class="text-[10px] text-blue-400">ใช้ไป <?= $pkgUsed ?>/<?= $pkgTotal ?> ชม. · เหลือ <span class="<?= $pkgRemain <= 2 ? 'text-red-500 font-bold' : 'text-green-600 font-bold' ?>"><?= $pkgRemain ?></span> ชม.</div>
+                    <?php else: ?>
+                      <span class="text-gray-300">-</span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="px-3 py-3 text-center text-xs" style="background:#eff6ff;">
+                    <?php if ($pkgName): ?>
+                      <span class="font-semibold text-blue-700"><?= $pkgUsedThis ?> ชม.</span>
+                    <?php else: ?>
+                      <span class="text-gray-300">-</span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="px-3 py-3 text-center text-xs" style="background:#eff6ff;">
+                    <?php if (!empty($x['pkg_slip_path'])): ?>
+                      <span class="text-blue-600 font-medium">✓ มีสลิป</span>
+                    <?php elseif ($pkgName): ?>
+                      <span class="text-gray-400">ไม่มีสลิป</span>
                     <?php else: ?>
                       <span class="text-gray-300">-</span>
                     <?php endif; ?>
@@ -475,7 +733,7 @@ $stats = $statsStmt->fetch();
                     <?= htmlspecialchars($x['customer_phone']) ?></div>
                 </div>
                 <div class="text-right">
-                  <div style="color:#004A7C;" class="text-lg font-bold">฿<?= number_format($x['total_amount'], 0) ?></div>
+                  <div style="color:#B71C1C;" class="text-lg font-bold">฿<?= number_format($x['total_amount'], 0) ?></div>
                   <span
                     class="text-[10px] px-2 py-0.5 rounded-full <?= $isBooked ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' ?>">
                     <?= $isBooked ? 'จองแล้ว' : 'ยกเลิก' ?>
@@ -508,10 +766,98 @@ $stats = $statsStmt->fetch();
       </div>
     <?php else: ?>
       <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <h3 class="text-xl font-bold text-gray-800 mb-2">ไม่พบข้อมูล</h3>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">ไม่พบข้อมูลการจอง</h3>
         <p class="text-gray-500">ไม่มีรายการจองในช่วงเวลาที่เลือก</p>
       </div>
     <?php endif; ?>
+
+    <!-- Package Purchases Preview -->
+    <div class="mt-6">
+      <h2 style="color:#1d4ed8;" class="text-lg font-bold mb-3">ยอดซื้อแพ็กเกจแบดมินตัน (ชำระครั้งเดียว)</h2>
+      <?php if (count($pkgPreviewRows) > 0): ?>
+        <div class="bg-white rounded-xl border-2 border-blue-200 overflow-hidden mb-6">
+          <div style="background:#1d4ed8;" class="px-6 py-4 flex justify-between items-center">
+            <h2 class="text-sm font-bold text-white">ตัวอย่างยอดซื้อแพ็กเกจ (10 รายการล่าสุด)</h2>
+            <span class="text-blue-200 text-xs">Excel Sheet 2: ยอดซื้อแพ็กเกจ</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr style="background:#1e40af;" class="text-white text-xs">
+                  <th class="px-3 py-3 text-center font-medium">#</th>
+                  <th class="px-3 py-3 text-left font-medium">วันที่ซื้อ</th>
+                  <th class="px-3 py-3 text-left font-medium">ชื่อสมาชิก</th>
+                  <th class="px-3 py-3 text-center font-medium">เบอร์โทร</th>
+                  <th class="px-3 py-3 text-left font-medium">แพ็กเกจ</th>
+                  <th class="px-3 py-3 text-center font-medium">ชม.รวม</th>
+                  <th class="px-3 py-3 text-right font-medium">ราคา (฿)</th>
+                  <th class="px-3 py-3 text-center font-medium">ชม.ที่ใช้แล้ว</th>
+                  <th class="px-3 py-3 text-center font-medium">วันหมดอายุ</th>
+                  <th class="px-3 py-3 text-center font-medium">สถานะ</th>
+                  <th class="px-3 py-3 text-center font-medium">สลิปชำระ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-blue-100">
+                <?php
+                $pkgStatusMap = ['active' => ['label' => 'กำลังใช้งาน', 'class' => 'bg-green-100 text-green-700'],
+                                 'expired' => ['label' => 'หมดอายุ', 'class' => 'bg-gray-100 text-gray-500'],
+                                 'exhausted' => ['label' => 'ใช้หมดแล้ว', 'class' => 'bg-red-100 text-red-600']];
+                foreach ($pkgPreviewRows as $pidx => $pk):
+                  $hoursLabel = $pk['hours_total'] . ' ชม.';
+                  if ($pk['bonus_hours'] > 0) {
+                    $hoursLabel = ($pk['pkg_type_hours'] ?? $pk['hours_total']) . '+' . $pk['bonus_hours'] . ' (รวม ' . $pk['hours_total'] . ')';
+                  }
+                  $stInfo = $pkgStatusMap[$pk['status']] ?? ['label' => $pk['status'], 'class' => 'bg-gray-100 text-gray-500'];
+                  $expiry = !empty($pk['expiry_date']) ? date('d/m/Y', strtotime($pk['expiry_date'])) : 'ไม่กำหนด';
+                  $remaining = max(0, $pk['hours_total'] - $pk['hours_used']);
+                ?>
+                  <tr class="hover:bg-blue-50 transition-colors <?= $pidx % 2 === 1 ? 'bg-blue-50/40' : '' ?>">
+                    <td class="px-3 py-3 text-center text-gray-500 text-xs"><?= $pidx + 1 ?></td>
+                    <td class="px-3 py-3 text-xs">
+                      <div class="font-medium text-gray-800"><?= date('d/m/Y', strtotime($pk['purchase_date'])) ?></div>
+                    </td>
+                    <td class="px-3 py-3 text-gray-800 text-xs font-medium"><?= htmlspecialchars($pk['customer_name']) ?></td>
+                    <td class="px-3 py-3 text-center text-gray-600 text-xs"><?= htmlspecialchars($pk['customer_phone']) ?></td>
+                    <td class="px-3 py-3 text-xs">
+                      <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium"><?= htmlspecialchars($pk['pkg_type_name']) ?></span>
+                    </td>
+                    <td class="px-3 py-3 text-center text-xs text-gray-700 font-medium"><?= $hoursLabel ?></td>
+                    <td class="px-3 py-3 text-right text-xs">
+                      <span class="font-bold text-blue-700 text-sm">฿<?= number_format($pk['pkg_price'], 0) ?></span>
+                      <div class="text-[10px] text-gray-400">ชำระครั้งเดียว</div>
+                    </td>
+                    <td class="px-3 py-3 text-center text-xs">
+                      <div class="text-gray-700"><?= $pk['hours_used'] ?>/<?= $pk['hours_total'] ?> ชม.</div>
+                      <div class="text-[10px] <?= $remaining <= 2 ? 'text-red-500 font-bold' : 'text-green-600' ?>">เหลือ <?= $remaining ?> ชม.</div>
+                    </td>
+                    <td class="px-3 py-3 text-center text-xs text-gray-500"><?= $expiry ?></td>
+                    <td class="px-3 py-3 text-center">
+                      <span class="text-[10px] px-2 py-0.5 rounded-full <?= $stInfo['class'] ?>"><?= $stInfo['label'] ?></span>
+                    </td>
+                    <td class="px-3 py-3 text-center text-xs">
+                      <?php if (!empty($pk['payment_slip_path'])): ?>
+                        <span class="text-blue-600 font-medium">✓ มีสลิป</span>
+                      <?php else: ?>
+                        <span class="text-gray-300">-</span>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <?php if (count($pkgPreviewRows) >= 10): ?>
+            <div class="bg-blue-50 border-t border-blue-200 px-6 py-3 text-center">
+              <p class="text-xs text-blue-500">แสดง 10 รายการล่าสุด — ดาวน์โหลด Excel เพื่อดูข้อมูลทั้งหมด (Sheet 2)</p>
+            </div>
+          <?php endif; ?>
+        </div>
+      <?php else: ?>
+        <div class="bg-white rounded-xl border-2 border-blue-200 p-8 text-center">
+          <p class="text-blue-400">ไม่มียอดซื้อแพ็กเกจในช่วงเวลาที่เลือก</p>
+        </div>
+      <?php endif; ?>
+    </div>
 
   </div>
 

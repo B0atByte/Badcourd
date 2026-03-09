@@ -316,14 +316,14 @@ $roomColors = [
     <!-- ── Page header ── -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
       <div>
-        <h1 class="text-2xl font-bold" style="color:#005691;">จัดการคลาสโยคะ</h1>
+        <h1 class="text-2xl font-bold" style="color:#D32F2F;">จัดการคลาสโยคะ</h1>
         <p class="text-gray-500 text-sm mt-0.5">
           <?= $dateLabel ?><?= $isToday ? ' <span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium ml-1">วันนี้</span>' : '' ?>
         </p>
       </div>
       <div class="flex gap-2">
         <button onclick="document.getElementById('searchPanel').classList.toggle('hidden')"
-          class="flex items-center gap-1.5 px-4 py-2 text-sm border border-[#005691] text-[#005691] rounded-lg hover:bg-[#005691]/5 transition-colors">
+          class="flex items-center gap-1.5 px-4 py-2 text-sm border border-[#D32F2F] text-[#D32F2F] rounded-lg hover:bg-[#D32F2F]/5 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -336,7 +336,7 @@ $roomColors = [
         </a>
         <button onclick="document.getElementById('createModal').classList.remove('hidden')"
           class="flex items-center gap-1.5 px-4 py-2 text-sm text-white rounded-lg font-medium transition-opacity hover:opacity-90"
-          style="background:#005691;">
+          style="background:#D32F2F;">
           + สร้างคลาส
         </button>
       </div>
@@ -346,7 +346,7 @@ $roomColors = [
     <div id="searchPanel" class="hidden mb-5">
       <div class="bg-white rounded-xl border border-gray-200 p-5">
         <h2 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <svg class="w-4 h-4" style="color:#005691" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" style="color:#D32F2F" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
@@ -354,7 +354,7 @@ $roomColors = [
         </h2>
         <div class="flex gap-2">
           <input id="yogaSearchInput" type="text" placeholder="พิมพ์ชื่อหรือเบอร์โทร..."
-            class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:border-[#005691] outline-none text-sm"
+            class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:border-[#D32F2F] outline-none text-sm"
             oninput="yogaSearch(this.value)">
           <button
             onclick="document.getElementById('yogaSearchInput').value=''; document.getElementById('yogaSearchResult').innerHTML='';"
@@ -399,7 +399,7 @@ $roomColors = [
         <p class="text-gray-500 font-medium">ยังไม่มีคลาสวันนี้</p>
         <p class="text-gray-400 text-sm mt-1 mb-5">กดปุ่ม "สร้างคลาส" เพื่อเพิ่มตารางเรียน</p>
         <button onclick="document.getElementById('createModal').classList.remove('hidden')"
-          class="px-5 py-2.5 text-sm text-white rounded-lg font-medium" style="background:#005691;">
+          class="px-5 py-2.5 text-sm text-white rounded-lg font-medium" style="background:#D32F2F;">
           + สร้างคลาส
         </button>
       </div>
@@ -621,7 +621,7 @@ $roomColors = [
         </div>
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             สร้างคลาส
           </button>
           <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
@@ -679,7 +679,7 @@ $roomColors = [
         </div>
         <div class="flex gap-3 pt-1">
           <button type="submit" class="flex-1 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90"
-            style="background:#005691;">
+            style="background:#D32F2F;">
             เพิ่มเข้าคลาส
           </button>
           <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')"
@@ -784,7 +784,7 @@ $roomColors = [
         btn.textContent = label;
         if (isActive) {
           btn.className = 'min-w-[2rem] h-8 px-2 text-xs rounded border border-transparent text-white transition-colors';
-          btn.style.background = '#005691';
+          btn.style.background = '#D32F2F';
         } else if (enabled) {
           btn.className = 'min-w-[2rem] h-8 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer';
           btn.addEventListener('click', onClick);

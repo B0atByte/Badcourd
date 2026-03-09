@@ -107,7 +107,7 @@ HTML;
   <div class="max-w-3xl mx-auto px-4 py-8">
 
     <div class="mb-7">
-      <h1 class="text-2xl font-bold" style="color:#005691;">การตั้งค่าเว็บไซต์</h1>
+      <h1 class="text-2xl font-bold" style="color:#D32F2F;">การตั้งค่าเว็บไซต์</h1>
       <p class="text-gray-500 text-sm mt-1">ปรับแต่งชื่อเว็บ, โลโก้ใน Navbar และ Favicon ในแท็บเบราว์เซอร์</p>
     </div>
 
@@ -128,7 +128,7 @@ HTML;
             value="<?= htmlspecialchars($siteName) ?>" placeholder="เช่น BARGAIN SPORT"
             class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
           <button type="submit" class="px-5 py-2 text-white text-sm rounded-lg hover:opacity-90"
-            style="background:#005691;">บันทึก</button>
+            style="background:#D32F2F;">บันทึก</button>
         </div>
         <p class="text-xs text-gray-400 mt-1.5">ชื่อนี้แสดงข้างโลโก้ในแถบด้านบนทุกหน้า</p>
       </form>
@@ -169,7 +169,7 @@ HTML;
               accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
               class="hidden" onchange="previewFile(this,'logo-preview','logo-name-display')">
             <button type="submit" class="mt-3 w-full py-2 text-white text-sm rounded-lg hover:opacity-90"
-              style="background:#005691;">อัปโหลด Logo</button>
+              style="background:#D32F2F;">อัปโหลด Logo</button>
           </form>
         </div>
       </div>
@@ -255,7 +255,7 @@ HTML;
             </div>
           </div>
           <!-- fake navbar -->
-          <div style="background:#005691;" class="px-4 py-2.5 flex items-center gap-2">
+          <div style="background:#D32F2F;" class="px-4 py-2.5 flex items-center gap-2">
             <img id="navbar-logo-preview" src="<?= htmlspecialchars($siteLogo) ?>?v=<?= time() ?>"
               style="width:38px;height:38px;object-fit:contain;border-radius:6px;">
             <span id="navbar-name-preview" class="text-white font-semibold text-sm"><?= htmlspecialchars($siteName) ?></span>

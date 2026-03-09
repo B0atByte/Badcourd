@@ -158,7 +158,7 @@ $promotions = $pStmt->fetchAll();
 
     <!-- Header -->
     <div class="mb-6">
-      <h1 style="color:#005691;" class="text-2xl font-bold">จัดการโปรโมชั่น</h1>
+      <h1 style="color:#D32F2F;" class="text-2xl font-bold">จัดการโปรโมชั่น</h1>
       <p class="text-gray-500 text-sm mt-0.5">Admin Panel · กำหนดส่วนลด % สำหรับการจอง</p>
     </div>
 
@@ -166,7 +166,7 @@ $promotions = $pStmt->fetchAll();
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <p class="text-gray-400 text-xs mb-1">โปรโมชั่นทั้งหมด</p>
-        <p style="color:#005691;" class="text-2xl font-bold"><?= $total ?></p>
+        <p style="color:#D32F2F;" class="text-2xl font-bold"><?= $total ?></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <p class="text-gray-400 text-xs mb-1">ใช้งานอยู่</p>
@@ -184,21 +184,21 @@ $promotions = $pStmt->fetchAll();
 
     <!-- Add Form -->
     <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
-      <h2 style="color:#005691;" class="font-semibold mb-4 text-sm uppercase tracking-wide">เพิ่มโปรโมชั่นใหม่</h2>
+      <h2 style="color:#D32F2F;" class="font-semibold mb-4 text-sm uppercase tracking-wide">เพิ่มโปรโมชั่นใหม่</h2>
       <form method="post" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">รหัสโปรโมชั่น (Code)</label>
           <input type="text" name="code" required maxlength="30" placeholder="เช่น STAFF15"
             oninput="this.value = this.value.toUpperCase()" style="text-transform:uppercase"
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
           <p class="text-xs text-gray-400 mt-1">ตัวอักษรภาษาอังกฤษ/ตัวเลข ไม่มีช่องว่าง (3-30 ตัว)</p>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">ชื่อโปรโมชั่น</label>
           <input type="text" name="name" required maxlength="100" placeholder="เช่น พนักงาน 15%"
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
         </div>
 
         <div>
@@ -206,12 +206,12 @@ $promotions = $pStmt->fetchAll();
           <div class="flex gap-4 py-2.5">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="discount_type" value="percent" id="dtPercent" checked
-                onchange="updateDiscountLabel()" class="accent-[#005691]">
+                onchange="updateDiscountLabel()" class="accent-[#D32F2F]">
               <span class="text-sm text-gray-700">ลดเป็น %</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="discount_type" value="fixed" id="dtFixed" onchange="updateDiscountLabel()"
-                class="accent-[#005691]">
+                class="accent-[#D32F2F]">
               <span class="text-sm text-gray-700">ลดเป็นบาท (คงที่)</span>
             </label>
           </div>
@@ -222,7 +222,7 @@ $promotions = $pStmt->fetchAll();
           <div class="relative">
             <input type="number" name="discount_percent" id="discountInput" required min="1" step="0.5"
               placeholder="เช่น 15"
-              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm pr-12">
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm pr-12">
             <span id="discountUnit"
               class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
           </div>
@@ -231,23 +231,23 @@ $promotions = $pStmt->fetchAll();
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">วันที่เริ่มต้น</label>
           <input type="date" name="start_date" required value="<?= date('Y-m-d') ?>"
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">วันที่สิ้นสุด</label>
           <input type="date" name="end_date" required
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">หมายเหตุ (ไม่บังคับ)</label>
           <input type="text" name="description" maxlength="255" placeholder="รายละเอียดเพิ่มเติม"
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
         </div>
 
         <div class="sm:col-span-2 lg:col-span-3 flex justify-end">
-          <button type="submit" name="add" style="background:#004A7C;"
+          <button type="submit" name="add" style="background:#B71C1C;"
             class="px-8 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             + เพิ่มโปรโมชั่น
           </button>
@@ -284,7 +284,7 @@ $promotions = $pStmt->fetchAll();
             <option value="all" <?= $per_page === 0 ? 'selected' : '' ?>>ทั้งหมด</option>
           </select>
           <div class="flex-1"></div>
-          <button type="submit" style="background:#004A7C;"
+          <button type="submit" style="background:#B71C1C;"
             class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             ค้นหา
           </button>
@@ -300,7 +300,7 @@ $promotions = $pStmt->fetchAll();
 
     <!-- Promotions List -->
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div style="background:#005691;" class="px-5 py-3 flex justify-between items-center">
+      <div style="background:#D32F2F;" class="px-5 py-3 flex justify-between items-center">
         <h2 class="text-white font-medium text-sm">รายการโปรโมชั่น</h2>
         <span class="text-blue-200 text-xs">
           พบ <?= number_format($totalRecords) ?>
@@ -332,7 +332,7 @@ $promotions = $pStmt->fetchAll();
                 <p class="text-gray-400 text-xs font-mono mt-0.5"><?= htmlspecialchars($p['code']) ?></p>
               </div>
               <div class="flex flex-col items-end gap-1">
-                <span class="text-lg font-bold" style="color:#005691;">
+                <span class="text-lg font-bold" style="color:#D32F2F;">
                   <?php $dtype = $p['discount_type'] ?? 'percent'; ?>
                   <?= number_format($p['discount_percent'], ($p['discount_percent'] == floor($p['discount_percent']) ? 0 : 2)) ?>  <?= $dtype === 'fixed' ? ' บ.' : '%' ?>
                 </span>
@@ -344,7 +344,7 @@ $promotions = $pStmt->fetchAll();
               <?php if ($p['description']): ?>· <?= htmlspecialchars($p['description']) ?><?php endif; ?>
             </p>
             <div class="flex gap-2">
-              <a href="?toggle=<?= $p['id'] ?>" style="border-color:#E8F1F5; color:#004A7C;"
+              <a href="?toggle=<?= $p['id'] ?>" style="border-color:#FFEBEE; color:#B71C1C;"
                 class="flex-1 py-1.5 border text-xs rounded text-center hover:bg-[#FAFAFA] transition-colors">
                 <?= $p['is_active'] ? 'ปิดใช้งาน' : 'เปิดใช้งาน' ?>
               </a>
@@ -403,7 +403,7 @@ $promotions = $pStmt->fetchAll();
                 </td>
                 <td class="px-5 py-3 text-center">
                   <?php $dtype = $p['discount_type'] ?? 'percent'; ?>
-                  <span style="color:#005691;"
+                  <span style="color:#D32F2F;"
                     class="text-lg font-bold"><?= number_format($p['discount_percent'], ($p['discount_percent'] == floor($p['discount_percent']) ? 0 : 2)) ?></span>
                   <span class="text-xs text-gray-500"><?= $dtype === 'fixed' ? ' บาท' : '%' ?></span>
                 </td>
@@ -416,7 +416,7 @@ $promotions = $pStmt->fetchAll();
                 </td>
                 <td class="px-5 py-3">
                   <div class="flex gap-1.5 justify-center">
-                    <a href="?toggle=<?= $p['id'] ?>" style="border-color:#E8F1F5; color:#004A7C;"
+                    <a href="?toggle=<?= $p['id'] ?>" style="border-color:#FFEBEE; color:#B71C1C;"
                       class="px-3 py-1.5 border text-xs rounded hover:bg-[#FAFAFA] transition-colors">
                       <?= $p['is_active'] ? 'ปิด' : 'เปิด' ?>
                     </a>

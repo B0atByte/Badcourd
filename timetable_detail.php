@@ -12,9 +12,16 @@ $courts = $pdo->query('SELECT * FROM courts ORDER BY court_type DESC, vip_room_n
 $startDay = $date . ' 00:00:00';
 $endDay   = $date . ' 23:59:59';
 $stmt = $pdo->prepare("
-    SELECT b.*, c.court_no, c.court_type, c.vip_room_name, c.is_vip
+    SELECT b.*, c.court_no, c.court_type, c.vip_room_name, c.is_vip,
+           p.name AS promotion_name, p.code AS promotion_code, p.discount_type AS promotion_discount_type,
+           mbp.hours_total AS pkg_hours_total, mbp.hours_used AS pkg_hours_used,
+           mbp.expiry_date AS pkg_expiry_date, mbp.payment_slip_path AS pkg_slip_path,
+           bpt.name AS pkg_type_name
     FROM bookings b
     JOIN courts c ON b.court_id = c.id
+    LEFT JOIN promotions p ON b.promotion_id = p.id
+    LEFT JOIN member_badminton_packages mbp ON b.member_badminton_package_id = mbp.id
+    LEFT JOIN badminton_package_types bpt ON mbp.badminton_package_type_id = bpt.id
     WHERE b.status = 'booked'
       AND b.start_datetime BETWEEN ? AND ?
     ORDER BY c.court_type DESC, c.vip_room_name ASC, c.court_no, b.start_datetime
@@ -102,14 +109,14 @@ foreach ($bookings as $b) {
 
     /* Sticky court name column */
     .tl-court-col { width: 130px; min-width: 130px; max-width: 130px; position: sticky; left: 0; z-index: 2; background: #fff; }
-    .tl-court-col-head { width: 130px; min-width: 130px; position: sticky; left: 0; z-index: 3; background: #005691; }
+    .tl-court-col-head { width: 130px; min-width: 130px; position: sticky; left: 0; z-index: 3; background: #D32F2F; }
 
     /* Slot columns */
     .tl-slot { width: 48px; min-width: 48px; }
 
     /* Hour header — show every hour label, dim half-hour ticks */
-    .tl-hour-head { font-size: 10px; text-align: center; color: #fff; vertical-align: middle; background: #005691; user-select: none; }
-    .tl-hour-head.half { background: #004A7C; color: #8ab4cc; font-size: 9px; }
+    .tl-hour-head { font-size: 10px; text-align: center; color: #fff; vertical-align: middle; background: #D32F2F; user-select: none; }
+    .tl-hour-head.half { background: #B71C1C; color: #8ab4cc; font-size: 9px; }
 
     /* Free slot */
     .tl-free { background: #f0f9ff; cursor: default; }
@@ -127,17 +134,17 @@ foreach ($bookings as $b) {
     .tl-booked-slip  { position: absolute; top: 2px; right: 4px; font-size: 9px; opacity:.8; }
 
     /* VIP vs Normal colors */
-    .tl-booked-normal { background: #004A7C; }
-    .tl-booked-vip    { background: #005691; }
+    .tl-booked-normal { background: #B71C1C; }
+    .tl-booked-vip    { background: #D32F2F; }
 
     /* Court name cell */
     .tl-court-cell {
       padding: 0 10px;
-      font-size: 12px; font-weight: 600; color: #005691;
+      font-size: 12px; font-weight: 600; color: #D32F2F;
       background: #fff;
       border-right: 2px solid #e5e7eb;
     }
-    .tl-court-cell-vip { background: #f0f4ff; color: #004A7C; }
+    .tl-court-cell-vip { background: #f0f4ff; color: #B71C1C; }
     .tl-court-cell-head { font-size: 11px; color: rgba(255,255,255,.8); font-weight: 500; }
 
     /* Search highlight / dim */
@@ -178,7 +185,7 @@ foreach ($bookings as $b) {
       padding: 20px; text-align: center; cursor: pointer;
       transition: border-color .2s, background .2s;
     }
-    .slip-upload-area:hover, .slip-upload-area.drag-over { border-color: #005691; background: #f0f9ff; }
+    .slip-upload-area:hover, .slip-upload-area.drag-over { border-color: #D32F2F; background: #f0f9ff; }
     .slip-upload-area input[type=file] { display: none; }
   </style>
 </head>
@@ -191,7 +198,7 @@ foreach ($bookings as $b) {
   <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
       <div>
-        <h1 style="color:#005691;" class="text-xl font-bold leading-tight">ตารางคอร์ตแบดมินตัน</h1>
+        <h1 style="color:#D32F2F;" class="text-xl font-bold leading-tight">ตารางคอร์ตแบดมินตัน</h1>
         <p class="text-gray-400 text-sm mt-0.5 flex items-center gap-1.5">
           <?= $thaiDate ?>
           <?php if ($isToday): ?>
@@ -205,7 +212,7 @@ foreach ($bookings as $b) {
         <form method="get" class="flex gap-2">
           <input type="date" name="date" value="<?= htmlspecialchars($date) ?>"
                  onchange="this.form.submit()"
-                 class="px-3 py-2 border border-gray-300 rounded-lg focus:border-[#005691] outline-none text-sm">
+                 class="px-3 py-2 border border-gray-300 rounded-lg focus:border-[#D32F2F] outline-none text-sm">
         </form>
         <a href="?date=<?= $nextDate ?>" class="px-3 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200 transition-colors">ถัดไป ›</a>
         <!-- View toggle -->
@@ -215,7 +222,7 @@ foreach ($bookings as $b) {
           <button id="btnCards" onclick="setView('cards')"
                   class="px-3 py-2 transition-colors border-l border-gray-200">การ์ดคอร์ต</button>
         </div>
-        <a href="/bookings/create.php" style="background:#005691;"
+        <a href="/bookings/create.php" style="background:#D32F2F;"
            class="px-4 py-2 text-white text-sm rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">+ จองใหม่</a>
       </div>
     </div>
@@ -224,14 +231,14 @@ foreach ($bookings as $b) {
   <!-- ===== Stats Bar ===== -->
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
     <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
-      <div style="background:#EDF4FA;" class="w-10 h-10 rounded-lg flex items-center justify-center text-[#005691] text-lg font-bold flex-shrink-0"><?= $bookingCount ?></div>
+      <div style="background:#EDF4FA;" class="w-10 h-10 rounded-lg flex items-center justify-center text-[#D32F2F] text-lg font-bold flex-shrink-0"><?= $bookingCount ?></div>
       <div>
         <p class="text-xs text-gray-400">การจองวันนี้</p>
         <p class="text-sm font-semibold text-gray-700"><?= $bookingCount ?> รายการ</p>
       </div>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
-      <div style="background:#004A7C;" class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg font-bold flex-shrink-0"><?= $bookedHours ?></div>
+      <div style="background:#B71C1C;" class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg font-bold flex-shrink-0"><?= $bookedHours ?></div>
       <div>
         <p class="text-xs text-gray-400">ชั่วโมงที่จอง</p>
         <p class="text-sm font-semibold text-gray-700"><?= $bookedHours ?> ชม.</p>
@@ -246,9 +253,9 @@ foreach ($bookings as $b) {
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-xs text-gray-400 mb-1">อัตราการใช้ (06–23น.)</p>
-      <p style="color:#005691;" class="text-2xl font-bold leading-tight"><?= $occupancy ?>%</p>
+      <p style="color:#D32F2F;" class="text-2xl font-bold leading-tight"><?= $occupancy ?>%</p>
       <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-        <div style="width:<?= $occupancy ?>%; background:#004A7C;" class="h-1.5 rounded-full transition-all"></div>
+        <div style="width:<?= $occupancy ?>%; background:#B71C1C;" class="h-1.5 rounded-full transition-all"></div>
       </div>
     </div>
   </div>
@@ -260,10 +267,10 @@ foreach ($bookings as $b) {
         <div class="w-4 h-4 rounded" style="background:#f0f9ff;border:1px solid #e0f2fe;"></div>ว่าง
       </div>
       <div class="flex items-center gap-1.5 text-xs text-gray-500">
-        <div class="w-4 h-4 rounded" style="background:#004A7C;"></div>จองแล้ว (ปกติ)
+        <div class="w-4 h-4 rounded" style="background:#B71C1C;"></div>จองแล้ว (ปกติ)
       </div>
       <div class="flex items-center gap-1.5 text-xs text-gray-500">
-        <div class="w-4 h-4 rounded" style="background:#005691;"></div>จองแล้ว (VIP)
+        <div class="w-4 h-4 rounded" style="background:#D32F2F;"></div>จองแล้ว (VIP)
       </div>
       <div class="flex items-center gap-1.5 text-xs text-gray-500">
         <div class="w-2 h-4 rounded" style="background:#ef4444;"></div>เวลาปัจจุบัน
@@ -289,7 +296,7 @@ foreach ($bookings as $b) {
         <input type="text" id="bookingSearch"
           placeholder="ค้นหาชื่อลูกค้าหรือเบอร์โทร..."
           oninput="doSearch(this.value)"
-          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-[#005691] focus:ring-1 focus:ring-[#005691]/20">
+          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-[#D32F2F] focus:ring-1 focus:ring-[#D32F2F]/20">
       </div>
       <button onclick="clearSearch()" id="btnClearSearch"
         class="hidden px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 whitespace-nowrap">
@@ -338,9 +345,9 @@ foreach ($bookings as $b) {
             <td class="tl-court-col <?= $courtCls ?>" title="<?= htmlspecialchars($courtName) ?>">
               <div class="flex items-center gap-1.5 overflow-hidden">
                 <?php if ($isVip): ?>
-                <span style="background:#005691;" class="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold">V</span>
+                <span style="background:#D32F2F;" class="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold">V</span>
                 <?php else: ?>
-                <span style="background:#E8F1F5;color:#005691;" class="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center font-bold text-xs"><?= $c['court_no'] ?></span>
+                <span style="background:#FFEBEE;color:#D32F2F;" class="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center font-bold text-xs"><?= $c['court_no'] ?></span>
                 <?php endif; ?>
                 <span class="overflow-hidden text-ellipsis whitespace-nowrap text-xs"><?= htmlspecialchars($courtName) ?></span>
               </div>
@@ -420,8 +427,8 @@ foreach ($bookings as $b) {
     <?php if (!empty($vipCourts)): ?>
     <!-- VIP Rooms section -->
     <div>
-      <h2 class="text-sm font-bold mb-3 flex items-center gap-2" style="color:#004A7C;">
-        <span style="background:#004A7C;" class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold flex-shrink-0">V</span>
+      <h2 class="text-sm font-bold mb-3 flex items-center gap-2" style="color:#B71C1C;">
+        <span style="background:#B71C1C;" class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold flex-shrink-0">V</span>
         ห้อง VIP
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -430,7 +437,7 @@ foreach ($bookings as $b) {
           $cBks = $bookingsByCourt[$c['id']] ?? [];
         ?>
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div style="background:#004A7C;" class="px-4 py-3 flex items-center gap-2">
+          <div style="background:#B71C1C;" class="px-4 py-3 flex items-center gap-2">
             <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">V</span>
             <span class="text-white font-semibold text-sm truncate"><?= htmlspecialchars($courtName) ?></span>
           </div>
@@ -453,8 +460,8 @@ foreach ($bookings as $b) {
                  data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
                  onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, true)">
               <div class="flex items-center justify-between mb-0.5">
-                <span class="text-xs font-bold" style="color:#004A7C;"><?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?></span>
-                <?php if ($hasSlip): ?><span class="text-xs font-medium" style="color:#005691;" title="มีสลิปแล้ว">สลิป</span><?php endif; ?>
+                <span class="text-xs font-bold" style="color:#B71C1C;"><?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?></span>
+                <?php if ($hasSlip): ?><span class="text-xs font-medium" style="color:#D32F2F;" title="มีสลิปแล้ว">สลิป</span><?php endif; ?>
               </div>
               <p class="text-sm font-semibold text-gray-800 leading-tight truncate"><?= htmlspecialchars($bk['customer_name']) ?></p>
               <p class="text-xs text-gray-400"><?= htmlspecialchars($bk['customer_phone'] ?? '') ?> &middot; <?= $bk['duration_hours'] ?> ชม.</p>
@@ -470,8 +477,8 @@ foreach ($bookings as $b) {
     <?php if (!empty($normalCourts)): ?>
     <!-- Normal Courts section -->
     <div>
-      <h2 class="text-sm font-bold mb-3 flex items-center gap-2" style="color:#005691;">
-        <span style="background:#005691;" class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold flex-shrink-0">B</span>
+      <h2 class="text-sm font-bold mb-3 flex items-center gap-2" style="color:#D32F2F;">
+        <span style="background:#D32F2F;" class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold flex-shrink-0">B</span>
         คอร์ตปกติ
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -480,7 +487,7 @@ foreach ($bookings as $b) {
           $cBks = $bookingsByCourt[$c['id']] ?? [];
         ?>
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div style="background:#005691;" class="px-4 py-3 flex items-center gap-2">
+          <div style="background:#D32F2F;" class="px-4 py-3 flex items-center gap-2">
             <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0"><?= $c['court_no'] ?></span>
             <span class="text-white font-semibold text-sm truncate"><?= htmlspecialchars($courtName) ?></span>
           </div>
@@ -503,8 +510,8 @@ foreach ($bookings as $b) {
                  data-bk-end-ts="<?= $endDt->getTimestamp() ?>"
                  onclick="showModal(<?= $bkJson ?>, <?= $cnJson ?>, false)">
               <div class="flex items-center justify-between mb-0.5">
-                <span class="text-xs font-bold" style="color:#005691;"><?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?></span>
-                <?php if ($hasSlip): ?><span class="text-xs font-medium" style="color:#005691;" title="มีสลิปแล้ว">สลิป</span><?php endif; ?>
+                <span class="text-xs font-bold" style="color:#D32F2F;"><?= $startDt->format('H:i') ?>–<?= $endDt->format('H:i') ?></span>
+                <?php if ($hasSlip): ?><span class="text-xs font-medium" style="color:#D32F2F;" title="มีสลิปแล้ว">สลิป</span><?php endif; ?>
               </div>
               <p class="text-sm font-semibold text-gray-800 leading-tight truncate"><?= htmlspecialchars($bk['customer_name']) ?></p>
               <p class="text-xs text-gray-400"><?= htmlspecialchars($bk['customer_phone'] ?? '') ?> &middot; <?= $bk['duration_hours'] ?> ชม.</p>
@@ -527,7 +534,7 @@ foreach ($bookings as $b) {
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
 
     <!-- Modal header -->
-    <div style="background:#005691;" class="rounded-t-2xl px-5 py-4 flex items-center justify-between flex-shrink-0">
+    <div style="background:#D32F2F;" class="rounded-t-2xl px-5 py-4 flex items-center justify-between flex-shrink-0">
       <div class="flex items-center gap-3">
         <div id="modalCourtBadge" class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm">V</div>
         <div>
@@ -554,7 +561,7 @@ foreach ($bookings as $b) {
         <div class="bg-gray-50 rounded-xl p-3 col-span-2">
           <p class="text-xs text-gray-400 mb-0.5">วันที่ &amp; เวลา</p>
           <p class="font-medium text-gray-800 text-sm" id="modalDate">–</p>
-          <p class="text-xs text-[#005691] font-semibold mt-0.5" id="modalTimeSlot">–</p>
+          <p class="text-xs text-[#D32F2F] font-semibold mt-0.5" id="modalTimeSlot">–</p>
         </div>
         <div class="bg-gray-50 rounded-xl p-3">
           <p class="text-xs text-gray-400 mb-0.5">ระยะเวลา</p>
@@ -570,10 +577,64 @@ foreach ($bookings as $b) {
         </div>
         <div class="text-right">
           <p class="text-xs text-gray-400 mb-0.5">ยอดชำระ</p>
-          <p style="color:#004A7C;" class="text-2xl font-bold" id="modalTotal">–</p>
+          <p style="color:#B71C1C;" class="text-2xl font-bold" id="modalTotal">–</p>
         </div>
       </div>
       <div id="modalDiscountRow" class="hidden text-xs text-green-600 -mt-2 text-right"></div>
+
+      <!-- Promotion & Package section -->
+      <div id="modalPromoPackage" class="hidden space-y-2">
+        <!-- Promotion info -->
+        <div id="modalPromoSection" class="hidden rounded-xl p-3 border" style="background:#f0fdf4;border-color:#bbf7d0;">
+          <p class="text-xs font-semibold text-green-700 mb-1.5 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            โปรโมชั่นที่ใช้
+          </p>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-bold text-green-800" id="modalPromoName">–</p>
+              <p class="text-xs text-green-600" id="modalPromoCode">–</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-green-600">ส่วนลด</p>
+              <p class="text-base font-bold text-green-700" id="modalPromoDiscount">–</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Package info -->
+        <div id="modalPkgSection" class="hidden rounded-xl p-3 border" style="background:#eff6ff;border-color:#bfdbfe;">
+          <p class="text-xs font-semibold mb-1.5 flex items-center gap-1" style="color:#1d4ed8;">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+            แพ็กเกจคอร์ตแบดมินตัน
+          </p>
+          <p class="text-sm font-bold mb-2" style="color:#1e40af;" id="modalPkgTypeName">–</p>
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-gray-500">ใช้ไปในจองนี้</span>
+                <span class="font-semibold" style="color:#1d4ed8;" id="modalPkgUsedThis">–</span>
+              </div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-gray-500">ใช้ไปทั้งหมด</span>
+                <span class="font-semibold text-gray-700" id="modalPkgUsedTotal">–</span>
+              </div>
+              <div class="flex justify-between text-xs mb-2">
+                <span class="text-gray-500">คงเหลือ</span>
+                <span class="font-bold" id="modalPkgRemaining">–</span>
+              </div>
+              <!-- Progress bar -->
+              <div class="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                <div id="modalPkgBar" class="h-full rounded-full bg-blue-500 transition-all" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-blue-100">
+            <span class="text-xs text-gray-400">วันหมดอายุ: <span id="modalPkgExpiry" class="text-gray-600">–</span></span>
+            <span id="modalPkgSlipBadge" class="hidden text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">📎 มีสลิปแพ็กเกจ</span>
+          </div>
+        </div>
+      </div>
 
       <!-- Payment slip section -->
       <div id="slipSection">
@@ -607,7 +668,7 @@ foreach ($bookings as $b) {
             <input type="file" id="slipFileInput" accept="image/jpeg,image/png,image/webp" onchange="uploadSlip(this.files[0])">
           </div>
           <div id="uploadProgress" class="hidden mt-2 text-xs text-gray-500 flex items-center gap-2">
-            <svg class="w-4 h-4 animate-spin text-[#005691]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+            <svg class="w-4 h-4 animate-spin text-[#D32F2F]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
             กำลังอัปโหลด...
           </div>
           <div id="uploadError" class="hidden mt-2 text-xs text-red-500"></div>
@@ -621,7 +682,7 @@ foreach ($bookings as $b) {
 
     <!-- Footer buttons -->
     <div class="px-5 pb-5 flex gap-2">
-      <a href="#" id="modalEditLink" style="background:#004A7C;"
+      <a href="#" id="modalEditLink" style="background:#B71C1C;"
          class="flex-1 px-4 py-2.5 text-white text-sm rounded-xl text-center hover:opacity-90 transition-opacity font-medium">
         แก้ไข / เลื่อน
       </a>
@@ -741,7 +802,7 @@ function doSearch(q) {
     resultList.innerHTML = rows.map(r => `
       <div class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50">
         <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-             style="background:${r.vip ? '#004A7C' : '#005691'};">${r.vip ? 'V' : '●'}</div>
+             style="background:${r.vip ? '#B71C1C' : '#D32F2F'};">${r.vip ? 'V' : '●'}</div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold text-gray-800 truncate">${escHtml(r.name)}</p>
           <p class="text-xs text-gray-400">${escHtml(r.phone)} · ${escHtml(r.court)} · ${r.start}–${r.end}</p>
@@ -780,7 +841,7 @@ function showModal(booking, courtName, isVip) {
   // Header badge
   const badge = document.getElementById('modalCourtBadge');
   badge.textContent = isVip ? 'V' : (booking.court_no || '#');
-  badge.style.background = isVip ? '#004A7C' : '#005691';
+  badge.style.background = isVip ? '#B71C1C' : '#D32F2F';
 
   document.getElementById('modalCourtName').textContent = courtName;
 
@@ -818,6 +879,61 @@ function showModal(booking, courtName, isVip) {
   } else {
     discRow.classList.add('hidden');
   }
+
+  // Promotion & Package section
+  const promoPackageDiv = document.getElementById('modalPromoPackage');
+  const promoSection = document.getElementById('modalPromoSection');
+  const pkgSection   = document.getElementById('modalPkgSection');
+  let showPromoPackage = false;
+
+  // Promotion
+  if (booking.promotion_id && booking.promotion_name) {
+    showPromoPackage = true;
+    promoSection.classList.remove('hidden');
+    document.getElementById('modalPromoName').textContent = booking.promotion_name;
+    document.getElementById('modalPromoCode').textContent = 'รหัส: ' + (booking.promotion_code || '–');
+    const discType = booking.promotion_discount_type === 'fixed' ? '฿' : '%';
+    const discVal  = parseFloat(booking.promotion_discount_percent || 0);
+    document.getElementById('modalPromoDiscount').textContent =
+      booking.promotion_discount_type === 'fixed'
+        ? '฿' + discVal.toLocaleString()
+        : discVal + '%';
+  } else {
+    promoSection.classList.add('hidden');
+  }
+
+  // Package
+  if (booking.member_badminton_package_id && booking.pkg_hours_total != null) {
+    showPromoPackage = true;
+    pkgSection.classList.remove('hidden');
+    const pkgTotal   = parseInt(booking.pkg_hours_total || 0);
+    const pkgUsed    = parseInt(booking.pkg_hours_used  || 0);
+    const pkgRemain  = Math.max(0, pkgTotal - pkgUsed);
+    const usedThis   = parseInt(booking.used_package_hours || 0);
+    const usedPct    = pkgTotal > 0 ? Math.min(100, Math.round(pkgUsed / pkgTotal * 100)) : 0;
+
+    document.getElementById('modalPkgTypeName').textContent   = booking.pkg_type_name || '–';
+    document.getElementById('modalPkgUsedThis').textContent   = usedThis + ' ชม.';
+    document.getElementById('modalPkgUsedTotal').textContent  = pkgUsed + ' / ' + pkgTotal + ' ชม.';
+    document.getElementById('modalPkgRemaining').textContent  = pkgRemain + ' ชม.';
+    document.getElementById('modalPkgRemaining').className    = 'font-bold ' + (pkgRemain <= 2 ? 'text-red-600' : 'text-green-600');
+    document.getElementById('modalPkgBar').style.width        = usedPct + '%';
+    document.getElementById('modalPkgBar').className          = 'h-full rounded-full transition-all ' + (pkgRemain > pkgTotal * 0.3 ? 'bg-blue-500' : 'bg-amber-400');
+
+    const expiry = booking.pkg_expiry_date;
+    document.getElementById('modalPkgExpiry').textContent = expiry ? expiry : 'ไม่จำกัด';
+
+    const slipBadge = document.getElementById('modalPkgSlipBadge');
+    if (booking.pkg_slip_path) {
+      slipBadge.classList.remove('hidden');
+    } else {
+      slipBadge.classList.add('hidden');
+    }
+  } else {
+    pkgSection.classList.add('hidden');
+  }
+
+  promoPackageDiv.classList.toggle('hidden', !showPromoPackage);
 
   // Links
   document.getElementById('modalEditLink').href   = '/bookings/update.php?id=' + booking.id;
@@ -1037,7 +1153,7 @@ document.querySelectorAll('.tl-booked').forEach(function(cell) {
       const st = getStatus(parseInt(bkStartTs), parseInt(bkEndTs));
 
       document.getElementById('ttBadge').textContent     = bkBadge || (bkVip === '1' ? 'V' : '#');
-      document.getElementById('ttBadge').style.background = bkVip === '1' ? '#004A7C' : '#005691';
+      document.getElementById('ttBadge').style.background = bkVip === '1' ? '#B71C1C' : '#D32F2F';
       document.getElementById('ttCourt').textContent     = bkCourt;
       document.getElementById('ttTime').textContent      = bkStart + ' – ' + bkEnd;
       document.getElementById('ttName').textContent      = bkName;
@@ -1075,8 +1191,8 @@ function setView(v) {
   document.getElementById('viewCards').classList.toggle('hidden', isTimeline);
   const btnT = document.getElementById('btnTimeline');
   const btnC = document.getElementById('btnCards');
-  btnT.style.cssText = isTimeline ? 'background:#005691;color:#fff;font-weight:600;' : 'background:#fff;color:#374151;';
-  btnC.style.cssText = isTimeline ? 'background:#fff;color:#374151;' : 'background:#005691;color:#fff;font-weight:600;';
+  btnT.style.cssText = isTimeline ? 'background:#D32F2F;color:#fff;font-weight:600;' : 'background:#fff;color:#374151;';
+  btnC.style.cssText = isTimeline ? 'background:#fff;color:#374151;' : 'background:#D32F2F;color:#fff;font-weight:600;';
   localStorage.setItem('timetableView', v);
 }
 // Restore saved preference on load
@@ -1134,7 +1250,7 @@ const bkAlerts = [
       title: `${bk.court} หมดเวลาแล้ว`,
       html: `ลูกค้า <b>${bk.name}</b><br>เล่นครบเวลาแล้ว กรุณาเตรียมคอร์ตสำหรับรายถัดไป`,
       confirmButtonText: 'รับทราบ',
-      confirmButtonColor: '#005691',
+      confirmButtonColor: '#D32F2F',
       timer: 30000,
       timerProgressBar: true,
     });

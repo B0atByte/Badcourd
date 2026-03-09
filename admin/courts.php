@@ -249,7 +249,7 @@ function toggleCourtTypeScript()
     <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
       <div class="flex flex-col lg:flex-row gap-6 justify-between">
         <div>
-          <h1 style="color:#005691;" class="text-2xl font-bold mb-1">จัดการคอร์ต</h1>
+          <h1 style="color:#D32F2F;" class="text-2xl font-bold mb-1">จัดการคอร์ต</h1>
           <p class="text-gray-500 text-sm">Admin Panel · คอร์ตปกติใช้ตัวเลข, VIP ใส่ชื่อห้องได้</p>
         </div>
 
@@ -258,7 +258,7 @@ function toggleCourtTypeScript()
           <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">ประเภทคอร์ต</label>
             <select name="court_type" onchange="toggleCourtType(this)" required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
               <option value="normal">คอร์ตปกติ</option>
               <option value="vip">ห้อง VIP</option>
             </select>
@@ -268,12 +268,12 @@ function toggleCourtTypeScript()
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">หมายเลขคอร์ต</label>
               <input type="number" min="1" name="court_no" placeholder="เช่น 1, 2, 3" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">กำหนดราคา</label>
               <select name="pricing_group_id" onchange="toggleAddPriceField(this)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
                 <option value="">— ราคาคงที่ —</option>
                 <?php foreach ($pricingGroups as $pg): ?>
                   <option value="<?= $pg['id'] ?>"><?= htmlspecialchars($pg['name']) ?></option>
@@ -283,7 +283,7 @@ function toggleCourtTypeScript()
             <div class="add-fixed-price-wrap">
               <input type="number" step="0.01" min="0" name="normal_price"
                 placeholder="ราคาคงที่ ฿/ชม. (ว่าง = ตามกฎ global)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
             </div>
           </div>
 
@@ -291,12 +291,12 @@ function toggleCourtTypeScript()
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">ชื่อห้อง VIP</label>
               <input type="text" name="vip_room_name" placeholder="เช่น VIP A, Executive..." maxlength="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">กำหนดราคา VIP</label>
               <select name="pricing_group_id" onchange="toggleAddPriceField(this)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
                 <option value="">— ราคาคงที่ —</option>
                 <?php foreach ($pricingGroups as $pg): ?>
                   <option value="<?= $pg['id'] ?>"><?= htmlspecialchars($pg['name']) ?></option>
@@ -305,11 +305,11 @@ function toggleCourtTypeScript()
             </div>
             <div class="add-fixed-price-wrap">
               <input type="number" step="0.01" min="0.01" name="vip_price" placeholder="ราคาคงที่ ฿/ชม."
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#E8F1F5] outline-none text-sm">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FFEBEE] outline-none text-sm">
             </div>
           </div>
 
-          <button type="submit" name="create" style="background:#004A7C;"
+          <button type="submit" name="create" style="background:#B71C1C;"
             class="px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             + เพิ่มคอร์ต
           </button>
@@ -321,12 +321,12 @@ function toggleCourtTypeScript()
     <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
       <?php
       $stats = [
-        ['label' => 'ทั้งหมด', 'val' => $totalCourts, 'color' => '#005691'],
-        ['label' => 'VIP', 'val' => $vipCourts, 'color' => '#004A7C'],
-        ['label' => 'ปกติ', 'val' => $normalCourts, 'color' => '#E8F1F5'],
-        ['label' => 'พร้อมใช้', 'val' => $availableCourts, 'color' => '#004A7C'],
-        ['label' => 'ใช้งานอยู่', 'val' => $inUseCourts, 'color' => '#E8F1F5'],
-        ['label' => 'ซ่อมบำรุง', 'val' => $maintenanceCourts, 'color' => '#005691'],
+        ['label' => 'ทั้งหมด', 'val' => $totalCourts, 'color' => '#D32F2F'],
+        ['label' => 'VIP', 'val' => $vipCourts, 'color' => '#B71C1C'],
+        ['label' => 'ปกติ', 'val' => $normalCourts, 'color' => '#FFEBEE'],
+        ['label' => 'พร้อมใช้', 'val' => $availableCourts, 'color' => '#B71C1C'],
+        ['label' => 'ใช้งานอยู่', 'val' => $inUseCourts, 'color' => '#FFEBEE'],
+        ['label' => 'ซ่อมบำรุง', 'val' => $maintenanceCourts, 'color' => '#D32F2F'],
       ];
       foreach ($stats as $s):
         ?>
@@ -372,7 +372,7 @@ function toggleCourtTypeScript()
             <option value="all" <?= $per_page === 0 ? 'selected' : '' ?>>ทั้งหมด</option>
           </select>
           <div class="flex-1"></div>
-          <button type="submit" style="background:#004A7C;"
+          <button type="submit" style="background:#B71C1C;"
             class="px-5 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
             ค้นหา
           </button>
@@ -391,7 +391,7 @@ function toggleCourtTypeScript()
       <!-- Count bar -->
       <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
         <span class="text-sm text-gray-600 font-medium">
-          พบ <span style="color:#005691;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
+          พบ <span style="color:#D32F2F;" class="font-bold"><?= number_format($totalRecords) ?></span> รายการ
           <?php if ($search !== '' || $type_filter !== '' || $status_filter !== ''): ?>
             <span class="text-gray-400 text-xs">(กรองแล้ว / ทั้งหมด <?= $totalCourts ?> คอร์ต)</span>
           <?php endif; ?>
@@ -404,7 +404,7 @@ function toggleCourtTypeScript()
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr style="background:#005691;" class="text-white text-left">
+              <tr style="background:#D32F2F;" class="text-white text-left">
                 <th class="px-4 py-3 font-medium">ID</th>
                 <th class="px-4 py-3 font-medium">ชื่อคอร์ต / ห้อง</th>
                 <th class="px-4 py-3 font-medium text-center">ประเภท</th>
@@ -429,15 +429,15 @@ function toggleCourtTypeScript()
                   <td class="px-4 py-3">
                     <div class="flex items-center gap-2">
                       <?php if ($isVip): ?>
-                        <span style="background:#005691;"
+                        <span style="background:#D32F2F;"
                           class="w-7 h-7 rounded flex items-center justify-center text-xs text-white font-bold">V</span>
                       <?php else: ?>
-                        <span style="background:#E8F1F5;"
+                        <span style="background:#FFEBEE;"
                           class="w-7 h-7 rounded flex items-center justify-center text-xs text-white font-bold"><?= $c['court_no'] ?></span>
                       <?php endif; ?>
                       <span class="font-medium text-gray-800"><?= htmlspecialchars($displayName) ?></span>
                       <?php if ($isVip): ?>
-                        <span class="text-xs px-2 py-0.5 rounded" style="background:#FAFAFA; color:#004A7C;">VIP</span>
+                        <span class="text-xs px-2 py-0.5 rounded" style="background:#FAFAFA; color:#B71C1C;">VIP</span>
                       <?php endif; ?>
                     </div>
                   </td>
@@ -457,10 +457,10 @@ function toggleCourtTypeScript()
                     }
                     ?>
                     <?php if ($pgName): ?>
-                      <span class="text-xs px-2 py-0.5 rounded" style="background:#E8F1F5;color:#004A7C;">กฎ:
+                      <span class="text-xs px-2 py-0.5 rounded" style="background:#FFEBEE;color:#B71C1C;">กฎ:
                         <?= htmlspecialchars($pgName) ?></span>
                     <?php elseif ($isVip && $c['vip_price']): ?>
-                      <span style="color:#004A7C;" class="font-medium"><?= number_format($c['vip_price'], 0) ?> ฿/ชม.</span>
+                      <span style="color:#B71C1C;" class="font-medium"><?= number_format($c['vip_price'], 0) ?> ฿/ชม.</span>
                     <?php elseif (!$isVip && $c['normal_price']): ?>
                       <span class="font-medium text-gray-700"><?= number_format($c['normal_price'], 0) ?> ฿/ชม.</span>
                     <?php else: ?>
@@ -518,7 +518,7 @@ function toggleCourtTypeScript()
                           <option value="<?= $s ?>" <?= $c['status'] === $s ? 'selected' : '' ?>><?= $statusThai[$s] ?></option>
                         <?php endforeach; ?>
                       </select>
-                      <button type="submit" name="update" style="background:#004A7C;"
+                      <button type="submit" name="update" style="background:#B71C1C;"
                         class="px-3 py-1.5 text-white text-xs rounded hover:opacity-90 transition-opacity">
                         บันทึก
                       </button>
@@ -538,7 +538,7 @@ function toggleCourtTypeScript()
         <div class="p-12 text-center">
           <?php if ($search !== '' || $type_filter !== '' || $status_filter !== ''): ?>
             <p class="text-gray-400 text-lg mb-2">ไม่พบคอร์ตที่ตรงกับการค้นหา</p>
-            <a href="courts.php" class="text-sm" style="color:#005691;">ล้างตัวกรอง</a>
+            <a href="courts.php" class="text-sm" style="color:#D32F2F;">ล้างตัวกรอง</a>
           <?php else: ?>
             <p class="text-gray-400 text-lg mb-2">ยังไม่มีคอร์ต</p>
             <p class="text-gray-500 text-sm">เพิ่มคอร์ตจากฟอร์มด้านบน</p>
