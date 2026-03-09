@@ -2,6 +2,8 @@ services:
   php:
     build: .
     container_name: php-app
+    env_file:
+      - .env
     volumes:
       - .:/var/www/html
     ports:

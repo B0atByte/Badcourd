@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <?php if ($_sf_success): ?>
     Swal.fire({
         icon: 'success',
-        title: '<?= addslashes($_sf_success) ?>',
+        title: <?= json_encode($_sf_success, JSON_UNESCAPED_UNICODE) ?>,
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
     Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: '<?= addslashes($_sf_error) ?>',
+        text: <?= json_encode($_sf_error, JSON_UNESCAPED_UNICODE) ?>,
         confirmButtonColor: '#005691',
     });
     <?php endif; ?>

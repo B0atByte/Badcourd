@@ -183,6 +183,14 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 
 ## Changelog
 
+### v1.7 — 2026-03-09
+**Security Improvements**
+
+- ย้าย database credentials ออกจาก `config/db.php` ไปใช้ `.env` (ป้องกัน credential exposure)
+- เพิ่ม `.env.example` เป็น template สำหรับ setup ใหม่
+- อัปเดต `docker-compose.yml` ให้ PHP container รับ env vars จาก `env_file`
+- แก้ XSS ใน `includes/swal_flash.php` — เปลี่ยน `addslashes()` เป็น `json_encode()` ใน JavaScript context
+
 ### v1.6 — 2026-03-09
 **New Theme & Badminton Package System**
 
