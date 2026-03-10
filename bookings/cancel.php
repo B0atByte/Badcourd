@@ -36,7 +36,7 @@ try {
     if ($booking['member_badminton_package_id']) {
         $pdo->prepare("
             UPDATE member_badminton_packages
-            SET hours_used = hours_used - ?,
+            SET hours_used = GREATEST(0, hours_used - ?),
                 status = 'active',
                 updated_at = NOW()
             WHERE id = ?

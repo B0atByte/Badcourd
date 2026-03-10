@@ -194,6 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $final_promo_percent = $applied_promotion_id ? $applied_promo_percent : null;
             }
 
+            $pdo->beginTransaction();
+            try {
+
             // Insert booking with package support
             $stmt = $pdo->prepare('INSERT INTO bookings(
                 court_id, customer_name, customer_phone, member_id, start_datetime,
@@ -226,11 +229,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("
                     UPDATE member_badminton_packages
                     SET hours_used = hours_used + ?,
-                        status = CASE WHEN hours_total - (hours_used + ?) <= 0
+                        status = CASE WHEN hours_total - hours_used <= 0
                                  THEN 'exhausted' ELSE 'active' END,
                         updated_at = NOW()
                     WHERE id = ?
-                ")->execute([$hours, $hours, $badminton_package_id]);
+                ")->execute([$hours, $badminton_package_id]);
             }
 
             // Update member stats and award points (only if not using package)
@@ -281,6 +284,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $created_by
                     ]);
                 }
+            }
+
+            $pdo->commit();
+
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง';
             }
 
             // Payment slip upload (optional)
