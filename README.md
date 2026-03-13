@@ -39,8 +39,14 @@
 **สมาชิก**
 - เพิ่มสมาชิกได้โดยตรง หรืออัตโนมัติเมื่อจองสำเร็จ
 - ระดับ Bronze / Silver / Gold / Platinum
-- ส่วนลดตามระดับ (0% / 5% / 10% / 15%)
+- ส่วนลดตามระดับ (0% / 5% / 10% / 15%) พร้อม toggle ปิด/เปิดได้
 - ติดตาม Points, จำนวนจอง, ยอดใช้จ่าย
+- หน้าจัดการสมาชิกรองรับ 2 มุมมอง: ตาราง / การ์ด
+
+**ใบเสร็จรับเงิน**
+- ออกใบเสร็จรับเงินพร้อมพิมพ์ (A5)
+- ตั้งค่าข้อมูลกิจการ, logo, เลขผู้เสียภาษี ผ่าน admin/settings.php
+- คัดลอกใบเสร็จเป็นรูปส่งลูกค้าทาง Line ได้ทันที
 
 **โปรโมชั่น**
 - โค้ดส่วนลด กำหนดวันเริ่ม–สิ้นสุด
@@ -127,9 +133,10 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 /
 ├── admin/
 │   ├── courts.php                   จัดการคอร์ต
-│   ├── members.php                  จัดการสมาชิก (เพิ่ม/แก้ไข/ลบ/ปรับแต้ม)
+│   ├── members.php                  จัดการสมาชิก (ตาราง/การ์ด, toggle ส่วนลด)
 │   ├── pricing.php                  จัดการราคา
 │   ├── promotions.php               โปรโมชั่น
+│   ├── settings.php                 ตั้งค่าเว็บไซต์ & ใบเสร็จ (2 แท็บ)
 │   ├── users.php                    จัดการผู้ใช้ระบบ
 │   ├── badminton_packages.php       จัดการแพ็กเกจแบดมินตัน
 │   ├── upload_badminton_slip_ajax.php AJAX อัปโหลดสลิปแพ็กเกจแบดมินตัน
@@ -137,10 +144,10 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 │   ├── yoga_packages.php            จัดการแพ็กเกจโยคะ
 │   └── yoga_pkg_ajax.php            AJAX ค้นหาแพ็กเกจ
 ├── auth/                   login, logout, guard middleware
-├── bookings/               create, index, update, cancel, AJAX endpoints
+├── bookings/               create, index, update, cancel, receipt, AJAX endpoints
 ├── config/                 db.php (PDO connection)
 ├── includes/               header, footer, helpers, pagination
-├── members/                ค้นหาและดูโปรไฟล์สมาชิก
+├── members/                check (API), profile, search (redirect)
 ├── reports/                export Excel
 ├── SQL/
 │   ├── badcourt.sql        schema + seed data
@@ -182,6 +189,32 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 ---
 
 ## Changelog
+
+### v1.9 — 2026-03-13
+**Receipt System & Member Discount Toggle**
+
+**ใบเสร็จรับเงิน**
+- สร้าง `bookings/receipt.php` + `bookings/receipt_body.php` — ใบเสร็จรับเงินพร้อมพิมพ์ (A5 portrait)
+- แสดง: logo กิจการ, ชื่อ/ที่อยู่/เบอร์/เลขผู้เสียภาษี, รายการจอง, ราคา, ส่วนลด, ยอดรวม, สถานะ
+- PHP แปลง logo เป็น base64 inline (แก้ปัญหา CORS กับ html2canvas)
+- ปุ่ม "คัดลอกรูป" — capture ใบเสร็จเป็น PNG แล้วคัดลอกไปยัง clipboard ส่งให้ลูกค้าทาง Line ได้ทันที (fallback: download)
+- ปุ่มใบเสร็จใน `bookings/index.php` (desktop table + mobile card) และ `timetable_detail.php` modal
+
+**ตั้งค่าใบเสร็จ**
+- `admin/settings.php` แบ่งเป็น 2 แท็บ: "หน้าเว็บไซต์" และ "ใบเสร็จ"
+- ตั้งค่าได้: ที่อยู่กิจการ, เบอร์โทร, เลขผู้เสียภาษี, ข้อความ footer
+- Preview หัวใบเสร็จ real-time ใน tab ใบเสร็จ
+
+**ระบบสมาชิก**
+- รวม `admin/members.php` + `members/search.php` เป็นไฟล์เดียว พร้อม view toggle (ตาราง / การ์ด)
+- เพิ่ม toggle ปิด/เปิดระบบส่วนลดสมาชิก — เมื่อปิดจะคิดราคาเต็มโดยไม่ลดตาม % ระดับสมาชิก
+- `members/check.php`: เช็ค `member_discount_enabled` — return `discount_percent: 0` เมื่อปิด
+- `members/search.php`: redirect 301 → `/admin/members.php?view=card`
+
+**Database**
+- `site_settings`: เพิ่ม key `member_discount_enabled` (1=เปิด, 0=ปิด), `receipt_address`, `receipt_phone`, `receipt_tax_id`, `receipt_footer`
+
+---
 
 ### v1.8 — 2026-03-13
 **Bug Fixes & Validation**
