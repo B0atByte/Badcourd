@@ -183,6 +183,32 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 
 ## Changelog
 
+### v1.8 — 2026-03-13
+**Bug Fixes & Validation**
+
+**bookings/create.php**
+- แก้ bug แพ็กเกจแบดมินตัน status `exhausted` ผิดพลาด — CASE WHEN คำนวณซ้ำซ้อน ทำให้ status ถูกตั้งเป็น exhausted ก่อนครบชั่วโมง
+- เพิ่ม transaction ครอบ INSERT booking + UPDATE package + UPDATE member stats ป้องกัน data inconsistency
+- แก้ discount field ถูก override ทุกครั้งที่พิมพ์ข้อมูล — เพิ่ม flag `discountManuallyEdited` ป้องกันการ override เมื่อผู้ใช้ตั้งค่าเองแล้ว
+- เพิ่มปุ่ม deselect แพ็กเกจ (คลิกซ้ำเพื่อยกเลิก) และ disable discount input เมื่อเลือกแพ็กเกจ
+- เพิ่ม validation: ห้ามจองวันย้อนหลัง (server + client), ส่วนลดต้องไม่เกินราคารวม (server + client)
+- เพิ่ม SweetAlert2 confirm dialog ก่อน submit
+
+**bookings/cancel.php**
+- เพิ่ม `GREATEST(0, hours_used - ?)` ป้องกัน hours_used ติดลบเมื่อยกเลิกการจอง
+
+**bookings/update.php**
+- เพิ่ม server-side validation ห้ามเลื่อนไปวันที่ผ่านมา
+- เพิ่ม SweetAlert2 confirm dialog + client-side date validation
+
+**admin/yoga_packages.php**
+- เปลี่ยนปุ่มลบจาก native `confirm()` เป็น SweetAlert2
+
+**admin/members.php**
+- เปลี่ยน toggle status จาก native `confirm()` เป็น SweetAlert2
+- เพิ่ม validation ปรับแต้ม: ห้ามเป็น 0, ไม่เกิน 99,999
+- เพิ่ม `GREATEST(0, points + ?)` ป้องกันแต้มติดลบ
+
 ### v1.7 — 2026-03-09
 **Security Improvements**
 
