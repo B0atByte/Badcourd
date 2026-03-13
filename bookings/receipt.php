@@ -140,7 +140,7 @@ $receiptNo  = 'REC-' . str_pad($bk['id'], 6, '0', STR_PAD_LEFT);
           var blob = await new Promise(function(res) { canvas.toBlob(res, 'image/png'); });
           try {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            setBtn(btn, origHtml, '✓ คัดลอกแล้ว! วางใน LINE ได้เลย', '#16a34a');
+            setBtn(btn, origHtml, '✓ คัดลอกแล้ว', '#16a34a');
           } catch(e) {
             downloadCanvas(canvas);
             setBtn(btn, origHtml, '↓ บันทึกรูปแล้ว', '#7c3aed');
