@@ -57,6 +57,7 @@ $logoSrc = file_exists($logoAbsPath) ? $siteLogo . '?v=' . filemtime($logoAbsPat
   <title>ใบเสร็จ <?= htmlspecialchars($receiptNo) ?> – <?= htmlspecialchars($siteName) ?></title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     * { font-family: 'Prompt', sans-serif; }
 
@@ -87,18 +88,27 @@ $logoSrc = file_exists($logoAbsPath) ? $siteLogo . '?v=' . filemtime($logoAbsPat
 <body class="bg-gray-100 min-h-screen py-8 px-4">
 
   <!-- Toolbar (ซ่อนตอนพิมพ์) -->
-  <div class="no-print receipt-card mx-auto mb-4 flex gap-2">
+  <div class="no-print receipt-card mx-auto mb-4 flex gap-2 flex-wrap">
     <button onclick="window.print()"
-      class="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90"
+      class="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90"
       style="background:#D32F2F;">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
       </svg>
-      พิมพ์ใบเสร็จ
+      พิมพ์
+    </button>
+    <button id="copy-btn" onclick="copyReceiptImage()"
+      class="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all"
+      style="background:#0ea5e9;">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      คัดลอกรูป
     </button>
     <a href="index.php"
-      class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-600 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50">
+      class="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50">
       ← กลับ
     </a>
   </div>
@@ -258,5 +268,81 @@ $logoSrc = file_exists($logoAbsPath) ? $siteLogo . '?v=' . filemtime($logoAbsPat
 
   </div>
 
+  <script>
+    async function copyReceiptImage() {
+      var btn = document.getElementById('copy-btn');
+      var original = btn.innerHTML;
+
+      // แสดงสถานะ loading
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> กำลังสร้าง...';
+
+      try {
+        var card = document.querySelector('.receipt-card');
+
+        // ซ่อน toolbar ชั่วคราวก่อน capture
+        var toolbar = document.querySelector('.no-print');
+        toolbar.style.display = 'none';
+
+        var canvas = await html2canvas(card, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          onclone: function(doc) {
+            // ทำให้ font โหลดเสร็จก่อน render
+            doc.querySelectorAll('.no-print').forEach(function(el) {
+              el.style.display = 'none';
+            });
+          }
+        });
+
+        toolbar.style.display = '';
+
+        // ลอง copy ไป clipboard ก่อน
+        if (navigator.clipboard && window.ClipboardItem) {
+          canvas.toBlob(async function(blob) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              showBtnSuccess(btn, original, '✓ คัดลอกแล้ว!', '#16a34a');
+            } catch (err) {
+              // clipboard ถูกบล็อก → download แทน
+              downloadCanvas(canvas);
+              showBtnSuccess(btn, original, '↓ บันทึกแล้ว', '#7c3aed');
+            }
+          }, 'image/png');
+        } else {
+          // browser ไม่รองรับ ClipboardItem → download
+          downloadCanvas(canvas);
+          showBtnSuccess(btn, original, '↓ บันทึกแล้ว', '#7c3aed');
+        }
+
+      } catch (err) {
+        document.querySelector('.no-print').style.display = '';
+        btn.disabled = false;
+        btn.innerHTML = original;
+        alert('เกิดข้อผิดพลาด: ' + err.message);
+      }
+    }
+
+    function downloadCanvas(canvas) {
+      var link = document.createElement('a');
+      link.download = 'receipt-<?= $receiptNo ?>.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function showBtnSuccess(btn, original, label, color) {
+      btn.disabled = false;
+      btn.style.background = color;
+      btn.innerHTML = label;
+      setTimeout(function() {
+        btn.style.background = '#0ea5e9';
+        btn.innerHTML = original;
+      }, 2500);
+    }
+  </script>
 </body>
 </html>
