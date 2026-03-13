@@ -681,10 +681,14 @@ foreach ($bookings as $b) {
     </div>
 
     <!-- Footer buttons -->
-    <div class="px-5 pb-5 flex gap-2">
+    <div class="px-5 pb-5 flex gap-2 flex-wrap">
       <a href="#" id="modalEditLink" style="background:#B71C1C;"
          class="flex-1 px-4 py-2.5 text-white text-sm rounded-xl text-center hover:opacity-90 transition-opacity font-medium">
         แก้ไข / เลื่อน
+      </a>
+      <a href="#" id="modalReceiptLink" target="_blank"
+         class="px-4 py-2.5 bg-green-50 text-green-700 border border-green-200 text-sm rounded-xl text-center hover:bg-green-100 transition-colors font-medium">
+        ใบเสร็จ
       </a>
       <a href="#" id="modalCancelLink"
          onclick="return confirmCancel(event)"
@@ -936,8 +940,9 @@ function showModal(booking, courtName, isVip) {
   promoPackageDiv.classList.toggle('hidden', !showPromoPackage);
 
   // Links
-  document.getElementById('modalEditLink').href   = '/bookings/update.php?id=' + booking.id;
-  document.getElementById('modalCancelLink').href = '/bookings/cancel.php?id='  + booking.id;
+  document.getElementById('modalEditLink').href    = '/bookings/update.php?id='  + booking.id;
+  document.getElementById('modalReceiptLink').href = '/bookings/receipt.php?id=' + booking.id;
+  document.getElementById('modalCancelLink').href  = '/bookings/cancel.php?id='  + booking.id;
 
   // Slip section
   renderSlipSection(_currentSlipPath);
