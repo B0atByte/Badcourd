@@ -197,7 +197,7 @@ try {
         </a>
 
 
-        <a href="/members/search.php"
+        <a href="/admin/members.php"
           class="px-3 py-2 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
           สมาชิก
         </a>
@@ -411,7 +411,7 @@ try {
       </a>
 
 
-      <a href="/members/search.php"
+      <a href="/admin/members.php"
         class="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
         <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

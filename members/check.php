@@ -62,6 +62,9 @@ try {
     $pastNames = array_column($namesStmt->fetchAll(), 'customer_name');
 
     if ($member) {
+        // ตรวจสอบว่าระบบส่วนลดสมาชิกเปิดอยู่ไหม
+        $discountEnabled = (int)($pdo->query("SELECT setting_value FROM site_settings WHERE setting_key='member_discount_enabled'")->fetchColumn() ?? 1);
+
         // พบสมาชิก — รวมชื่อสมาชิกไว้ด้านหน้า (ถ้ายังไม่มีใน list)
         $discounts = [
             'Bronze' => 0,
@@ -69,7 +72,7 @@ try {
             'Gold' => 10,
             'Platinum' => 15
         ];
-        $discount_percent = $discounts[$member['member_level']] ?? 0;
+        $discount_percent = $discountEnabled ? ($discounts[$member['member_level']] ?? 0) : 0;
 
         // รวม member name ไว้ก่อน แล้วตามด้วยชื่ออื่นจาก booking history
         $allNames = array_values(array_unique(
