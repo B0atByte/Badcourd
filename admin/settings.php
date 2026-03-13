@@ -11,9 +11,13 @@ $success = $error = '';
 $rows = $pdo->query("SELECT setting_key, setting_value FROM site_settings")->fetchAll();
 $settings = [];
 foreach ($rows as $r) { $settings[$r['setting_key']] = $r['setting_value']; }
-$siteName    = $settings['site_name']    ?? 'BARGAIN SPORT';
-$siteLogo    = $settings['site_logo']    ?? '/logo/BPL.png';
-$siteFavicon = $settings['site_favicon'] ?? '/logo/BPL.png';
+$siteName      = $settings['site_name']       ?? 'BARGAIN SPORT';
+$siteLogo      = $settings['site_logo']       ?? '/logo/BPL.png';
+$siteFavicon   = $settings['site_favicon']    ?? '/logo/BPL.png';
+$receiptAddr   = $settings['receipt_address'] ?? '';
+$receiptPhone  = $settings['receipt_phone']   ?? '';
+$receiptTaxId  = $settings['receipt_tax_id']  ?? '';
+$receiptFooter = $settings['receipt_footer']  ?? 'ขอบคุณที่ใช้บริการ';
 
 // ── helper: อัปโหลดรูป ──────────────────────────────────────────
 function uploadImage(array $file, string $prefix): array {
@@ -39,7 +43,23 @@ function saveSetting(PDO $pdo, string $key, string $val): void {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'save_name') {
+    if ($action === 'save_receipt') {
+        $addr   = trim($_POST['receipt_address'] ?? '');
+        $phone  = trim($_POST['receipt_phone']   ?? '');
+        $taxId  = trim($_POST['receipt_tax_id']  ?? '');
+        $footer = trim($_POST['receipt_footer']  ?? '');
+        saveSetting($pdo, 'receipt_address', $addr);
+        saveSetting($pdo, 'receipt_phone',   $phone);
+        saveSetting($pdo, 'receipt_tax_id',  $taxId);
+        saveSetting($pdo, 'receipt_footer',  $footer);
+        $receiptAddr   = $addr;
+        $receiptPhone  = $phone;
+        $receiptTaxId  = $taxId;
+        $receiptFooter = $footer;
+        $success = 'บันทึกการตั้งค่าใบเสร็จแล้ว';
+    }
+
+    elseif ($action === 'save_name') {
         $newName = trim($_POST['site_name'] ?? '');
         if (!$newName) { $error = 'กรุณากรอกชื่อเว็บไซต์'; }
         else { saveSetting($pdo, 'site_name', $newName); $siteName = $newName; $success = "บันทึกชื่อเว็บ \"$newName\" แล้ว"; }
@@ -263,6 +283,62 @@ HTML;
         </div>
         <p class="text-xs text-gray-400 mt-2">* อัปเดตแบบ real-time ขณะเลือกไฟล์หรือพิมพ์ชื่อ</p>
       </div>
+    </div>
+
+    <!-- ══ ตั้งค่าใบเสร็จ ══ -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mt-5">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <div>
+          <h2 class="font-semibold text-gray-800">ตั้งค่าใบเสร็จ</h2>
+          <p class="text-xs text-gray-400">ข้อมูลกิจการที่แสดงบนหัวใบเสร็จทุกใบ</p>
+        </div>
+        <a href="/bookings/receipt.php?id=1" target="_blank"
+          class="ml-auto text-xs text-blue-600 underline hover:text-blue-800">ดูตัวอย่างใบเสร็จ →</a>
+      </div>
+      <form method="post" class="px-6 py-5 space-y-4">
+        <input type="hidden" name="action" value="save_receipt">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรกิจการ</label>
+            <input type="text" name="receipt_phone" placeholder="เช่น 02-123-4567"
+              value="<?= htmlspecialchars($receiptPhone) ?>"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เลขผู้เสียภาษี <span class="text-gray-400 font-normal">(ถ้ามี)</span></label>
+            <input type="text" name="receipt_tax_id" placeholder="เช่น 0105567XXXXXX"
+              value="<?= htmlspecialchars($receiptTaxId) ?>"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่กิจการ</label>
+          <textarea name="receipt_address" rows="2" placeholder="เช่น 123 ถ.สุขุมวิท แขวงคลองเตย กรุงเทพฯ 10110"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none resize-none"><?= htmlspecialchars($receiptAddr) ?></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ข้อความท้ายใบเสร็จ</label>
+          <input type="text" name="receipt_footer" placeholder="เช่น ขอบคุณที่ใช้บริการ กรุณาเก็บใบเสร็จไว้เป็นหลักฐาน"
+            value="<?= htmlspecialchars($receiptFooter) ?>"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none">
+          <p class="text-xs text-gray-400 mt-1">แสดงที่ด้านล่างของใบเสร็จทุกใบ</p>
+        </div>
+
+        <div class="pt-1">
+          <button type="submit"
+            class="px-6 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90"
+            style="background:#16a34a;">
+            บันทึกการตั้งค่าใบเสร็จ
+          </button>
+        </div>
+      </form>
     </div>
 
   </div>

@@ -228,6 +228,8 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
           <button onclick="viewSlip('<?= htmlspecialchars($r['payment_slip_path'], ENT_QUOTES) ?>')"
                   class="text-sm border border-purple-200 text-purple-600 px-3 py-1 rounded hover:bg-purple-50 transition-colors">ดูสลิป</button>
           <?php endif; ?>
+          <a href="receipt.php?id=<?=$r['id']?>" target="_blank"
+             class="text-sm border border-green-200 text-green-700 px-3 py-1 rounded hover:bg-green-50 transition-colors">ใบเสร็จ</a>
           <a href="update.php?id=<?=$r['id']?>"
              style="color:#B71C1C;"
              class="text-sm border border-[#FFEBEE] px-3 py-1 rounded hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
@@ -315,6 +317,8 @@ $totalRevenue   = (float)($stats['total_revenue'] ?? 0);
                     ดูสลิป
                 </button>
                 <?php endif; ?>
+                <a href="receipt.php?id=<?=$r['id']?>" target="_blank"
+                   class="px-3 py-1 border border-green-200 text-green-700 rounded text-xs hover:bg-green-50 transition-colors">ใบเสร็จ</a>
                 <a href="update.php?id=<?=$r['id']?>"
                    style="color:#B71C1C; border-color:#FFEBEE;"
                    class="px-3 py-1 border rounded text-xs hover:bg-[#FAFAFA] transition-colors">เลื่อน</a>
