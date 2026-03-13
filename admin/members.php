@@ -382,12 +382,13 @@ $levelColors = [
                                                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
                                             </button>
-                                            <form method="post" class="inline" onsubmit="return confirm('แน่ใจหรือไม่?')">
+                                            <form method="post" class="inline" id="toggleMember_<?= $member['id'] ?>">
                                                 <input type="hidden" name="action" value="toggle_status">
                                                 <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
                                                 <input type="hidden" name="new_status"
                                                     value="<?= $member['status'] === 'active' ? 'inactive' : 'active' ?>">
-                                                <button type="submit"
+                                                <button type="button"
+                                                    onclick="swalSubmit('toggleMember_<?= $member['id'] ?>', '<?= $member['status'] === 'active' ? 'ระงับสมาชิก?' : 'เปิดใช้งานสมาชิก?' ?>', '<?= htmlspecialchars($member['name'], ENT_QUOTES) ?>', '<?= $member['status'] === 'active' ? 'ระงับ' : 'เปิดใช้งาน' ?>')"
                                                     class="text-sm <?= $member['status'] === 'active' ? 'text-red-600' : 'text-green-600' ?>"
                                                     title="<?= $member['status'] === 'active' ? 'ระงับ' : 'เปิดใช้งาน' ?>">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

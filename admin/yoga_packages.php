@@ -293,10 +293,11 @@ $stats = $pdo->query("
                     <button
                       onclick="openEditType(<?= htmlspecialchars(json_encode($pt, JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>)"
                       class="text-xs px-2.5 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">แก้ไข</button>
-                    <form method="post" class="inline" onsubmit="return confirm('ลบประเภทนี้?')">
+                    <form method="post" class="inline" id="delPkgType_<?= $pt['id'] ?>">
                       <input type="hidden" name="action" value="delete_pkg_type">
                       <input type="hidden" name="pt_id" value="<?= $pt['id'] ?>">
-                      <button type="submit" class="text-red-400 hover:text-red-600 text-sm" title="ลบ">🗑</button>
+                      <button type="button" class="text-red-400 hover:text-red-600 text-sm" title="ลบ"
+                        onclick="swalDelete(() => document.getElementById('delPkgType_<?= $pt['id'] ?>').submit(), '<?= htmlspecialchars($pt['name'], ENT_QUOTES) ?>', 'ยืนยันลบประเภทแพ็กเกจ?')">🗑</button>
                     </form>
                   </div>
                 </td>

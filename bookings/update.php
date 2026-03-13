@@ -23,7 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $startHour = (int) $start->format('G');
     $endHour = $startHour + $hours;
 
-    if ($hours < 1 || $hours > 6) {
+    if ($date < date('Y-m-d')) {
+        $error = 'ไม่สามารถเลื่อนไปวันที่ผ่านมาแล้วได้';
+    } elseif ($hours < 1 || $hours > 6) {
         $error = 'จำนวนชั่วโมงต้องอยู่ระหว่าง 1–6 ชั่วโมง';
     } elseif ($startHour < 6 || $startHour >= 23) {
         $error = 'เวลาเริ่มต้องอยู่ระหว่าง 06:00–23:00 น.';
@@ -130,11 +132,11 @@ $court = $courtStmt->fetch();
             <div class="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 style="color:#005691;" class="font-semibold mb-4 text-sm">เลื่อนวันและเวลา</h3>
 
-                <form method="post">
+                <form method="post" onsubmit="return validateUpdateForm(event)">
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">วันที่ใหม่</label>
-                            <input type="date" name="date" required value="<?= htmlspecialchars($currentDate) ?>"
+                            <input type="date" name="date" id="updateDate" required value="<?= htmlspecialchars($currentDate) ?>"
                                 class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#E8F1F5] focus:ring-2 focus:ring-[#E8F1F5]/20 outline-none text-sm">
                         </div>
 
@@ -201,6 +203,31 @@ $court = $courtStmt->fetch();
     </div>
 
     <?php include __DIR__ . '/../includes/footer.php'; ?>
+    <script>
+        function validateUpdateForm(e) {
+            e.preventDefault();
+            const form = e.target;
+            const date = document.getElementById('updateDate').value;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (date < today) {
+                Swal.fire({ icon:'error', title:'วันที่ไม่ถูกต้อง', text:'ไม่สามารถเลื่อนไปวันที่ผ่านมาแล้วได้', confirmButtonColor:'#D32F2F' });
+                return false;
+            }
+            Swal.fire({
+                icon: 'question',
+                title: 'ยืนยันการเลื่อนการจอง?',
+                text: 'ระบบจะอัปเดตวันที่และเวลาใหม่',
+                showCancelButton: true,
+                confirmButtonColor: '#D32F2F',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                reverseButtons: true,
+            }).then(result => { if (result.isConfirmed) form.submit(); });
+            return false;
+        }
+    </script>
 </body>
 
 </html>
