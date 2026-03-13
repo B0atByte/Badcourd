@@ -14,11 +14,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $points_change = (int) $_POST['points_change'];
         $description = trim($_POST['description']);
 
-        try {
+        if ($points_change === 0) {
+            $error = 'กรุณาระบุจำนวนแต้มที่ต้องการปรับ (ไม่ใช่ 0)';
+        } elseif (abs($points_change) > 99999) {
+            $error = 'จำนวนแต้มต้องไม่เกิน 99,999 ต่อครั้ง';
+        } elseif (empty($description)) {
+            $error = 'กรุณาระบุเหตุผลในการปรับแต้ม';
+        }
+
+        if (!$error) try {
             $pdo->beginTransaction();
 
-            // Update member points
-            $updateStmt = $pdo->prepare("UPDATE members SET points = points + ? WHERE id = ?");
+            // ป้องกันแต้มติดลบ
+            $updateStmt = $pdo->prepare("UPDATE members SET points = GREATEST(0, points + ?) WHERE id = ?");
             $updateStmt->execute([$points_change, $member_id]);
 
             // Record transaction
@@ -498,7 +506,7 @@ $levelColors = [
         <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <h3 class="text-lg font-bold text-gray-900 mb-4">ปรับแต้มสมาชิก</h3>
 
-            <form method="post">
+            <form method="post" id="adjustPointsForm">
                 <input type="hidden" name="action" value="adjust_points">
                 <input type="hidden" name="member_id" id="adjust_member_id">
 
@@ -511,7 +519,8 @@ $levelColors = [
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">ปรับแต้ม</label>
-                    <input type="number" name="points_change" required
+                    <input type="number" name="points_change" id="pointsChangeInput" required
+                        min="-99999" max="99999"
                         placeholder="ใส่จำนวนเป็นบวกเพื่อเพิ่ม หรือลบเพื่อลด"
                         class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-[#FFEBEE] focus:ring-2 focus:ring-[#FFEBEE]/20 outline-none text-sm">
                     <p class="text-xs text-gray-500 mt-1">ใส่เลขบวก (+) เพื่อเพิ่มแต้ม หรือเลขลบ (-) เพื่อลดแต้ม</p>
@@ -524,7 +533,8 @@ $levelColors = [
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="submit" style="background:#D32F2F;"
+                    <button type="button" style="background:#D32F2F;"
+                        onclick="confirmAdjustPoints()"
                         class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
                         บันทึก
                     </button>
@@ -584,6 +594,31 @@ $levelColors = [
 
         function closeAdjustModal() {
             document.getElementById('adjustModal').classList.add('hidden');
+        }
+
+        function confirmAdjustPoints() {
+            const points = parseInt(document.getElementById('pointsChangeInput').value) || 0;
+            const form = document.getElementById('adjustPointsForm');
+            if (points === 0) {
+                Swal.fire({ icon:'error', title:'ไม่ถูกต้อง', text:'กรุณาระบุจำนวนแต้ม (ไม่ใช่ 0)', confirmButtonColor:'#D32F2F' });
+                return;
+            }
+            if (Math.abs(points) > 99999) {
+                Swal.fire({ icon:'error', title:'จำนวนเกินกำหนด', text:'ปรับแต้มได้ไม่เกิน 99,999 ต่อครั้ง', confirmButtonColor:'#D32F2F' });
+                return;
+            }
+            const action = points > 0 ? `เพิ่ม ${points.toLocaleString()} แต้ม` : `ลด ${Math.abs(points).toLocaleString()} แต้ม`;
+            Swal.fire({
+                icon: 'question',
+                title: 'ยืนยันการปรับแต้ม?',
+                text: action,
+                showCancelButton: true,
+                confirmButtonColor: '#D32F2F',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                reverseButtons: true,
+            }).then(result => { if (result.isConfirmed) form.submit(); });
         }
 
         // Close modal on escape key
