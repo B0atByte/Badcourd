@@ -103,42 +103,37 @@ $receiptNo  = 'REC-' . str_pad($bk['id'], 6, '0', STR_PAD_LEFT);
     </a>
   </div>
 
-  <!-- ใบเสร็จ (แสดงบนหน้าจอ) -->
+  <!-- ใบเสร็จ -->
   <div id="receipt-display" class="receipt-wrap mx-auto bg-white rounded-xl shadow-md overflow-hidden">
     <?php include __DIR__ . '/receipt_body.php'; ?>
   </div>
 
-  <!-- div สำหรับ capture รูป (ซ่อน, ไม่มี rounded corner เพื่อให้ขอบสะอาด) -->
-  <div style="position:fixed;left:-9999px;top:0;width:520px;background:#fff;" id="receipt-capture">
-    <?php include __DIR__ . '/receipt_body.php'; ?>
-  </div>
-
   <script>
-    var LOGO_B64 = <?= json_encode($logoBase64) ?>;
-
     async function captureReceipt() {
-      var btn = document.getElementById('copy-btn');
+      var btn    = document.getElementById('copy-btn');
+      var toolbar = document.getElementById('toolbar');
       var origHtml = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<span class="spin">↻</span> กำลังสร้าง...';
 
+      // ซ่อน toolbar ก่อน capture (จะไม่ติดในรูป)
+      toolbar.style.visibility = 'hidden';
+
       try {
-        // รอ font โหลดเสร็จ
         await document.fonts.ready;
 
-        var el = document.getElementById('receipt-capture');
+        var el = document.getElementById('receipt-display');
 
         var canvas = await html2canvas(el, {
           scale: 2.5,
-          useCORS: false,       // ปิด CORS เพราะเราใช้ base64 แล้ว
+          useCORS: false,
           allowTaint: false,
           backgroundColor: '#ffffff',
           logging: false,
           imageTimeout: 0,
-          width: el.scrollWidth,
-          height: el.scrollHeight,
-          windowWidth: 520,
         });
+
+        toolbar.style.visibility = '';
 
         // ลอง copy clipboard
         if (navigator.clipboard && window.ClipboardItem) {
@@ -147,7 +142,6 @@ $receiptNo  = 'REC-' . str_pad($bk['id'], 6, '0', STR_PAD_LEFT);
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
             setBtn(btn, origHtml, '✓ คัดลอกแล้ว! วางใน LINE ได้เลย', '#16a34a');
           } catch(e) {
-            // clipboard blocked → fallback download
             downloadCanvas(canvas);
             setBtn(btn, origHtml, '↓ บันทึกรูปแล้ว', '#7c3aed');
           }
@@ -157,6 +151,7 @@ $receiptNo  = 'REC-' . str_pad($bk['id'], 6, '0', STR_PAD_LEFT);
         }
 
       } catch(err) {
+        toolbar.style.visibility = '';
         btn.disabled = false;
         btn.innerHTML = origHtml;
         alert('เกิดข้อผิดพลาด: ' + err.message);
