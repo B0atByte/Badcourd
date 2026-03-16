@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config/db.php';
 $member_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($member_id === 0) {
-    header('Location: /members/search.php');
+    header('Location: /admin/members.php');
     exit;
 }
 
@@ -22,7 +22,7 @@ $stmt->execute([$member_id]);
 $member = $stmt->fetch();
 
 if (!$member) {
-    header('Location: /members/search.php');
+    header('Location: /admin/members.php');
     exit;
 }
 
@@ -86,11 +86,11 @@ $discount = $discounts[$member['member_level']] ?? 0;
 
         <!-- Back Button -->
         <div class="mb-6">
-            <a href="/members/search.php" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+            <a href="/admin/members.php" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
-                กลับไปค้นหาสมาชิก
+                กลับไปจัดการสมาชิก
             </a>
         </div>
 
@@ -121,7 +121,7 @@ $discount = $discounts[$member['member_level']] ?? 0;
                         <?php endif; ?>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <p class="text-sm text-gray-500 mb-1">เบอร์โทรศัพท์</p>
                             <p class="font-semibold text-gray-900"><?= htmlspecialchars($member['phone']) ?></p>
@@ -132,6 +132,14 @@ $discount = $discounts[$member['member_level']] ?? 0;
                             <p class="font-semibold text-gray-900"><?= htmlspecialchars($member['email']) ?></p>
                         </div>
                         <?php endif; ?>
+                        <?php if ($member['national_id']): ?>
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">เลขบัตรประชาชน</p>
+                            <p class="font-semibold text-gray-900 font-mono tracking-wide">
+                                <?= substr($member['national_id'],0,1).'-'.substr($member['national_id'],1,4).'-'.substr($member['national_id'],5,5).'-'.substr($member['national_id'],10,2).'-'.substr($member['national_id'],12,1) ?>
+                            </p>
+                        </div>
+                        <?php endif; ?>
                         <div>
                             <p class="text-sm text-gray-500 mb-1">สมัครสมาชิก</p>
                             <p class="font-semibold text-gray-900"><?= date('d/m/Y', strtotime($member['joined_date'])) ?></p>
@@ -140,6 +148,12 @@ $discount = $discounts[$member['member_level']] ?? 0;
                         <div>
                             <p class="text-sm text-gray-500 mb-1">จองล่าสุด</p>
                             <p class="font-semibold text-gray-900"><?= date('d/m/Y', strtotime($member['last_booking_date'])) ?></p>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($member['address']): ?>
+                        <div class="sm:col-span-2 lg:col-span-3">
+                            <p class="text-sm text-gray-500 mb-1">ที่อยู่</p>
+                            <p class="font-semibold text-gray-900"><?= nl2br(htmlspecialchars($member['address'])) ?></p>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -260,9 +274,18 @@ $discount = $discounts[$member['member_level']] ?? 0;
                                             </span>
                                         </div>
                                         <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-                                            <span>📅 <?= date('d/m/Y H:i', strtotime($booking['start_datetime'])) ?> น.</span>
-                                            <span>⏱️ <?= $booking['duration_hours'] ?> ชม.</span>
-                                            <span>💰 ฿<?= number_format($booking['total_amount'], 0) ?></span>
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                <?= date('d/m/Y H:i', strtotime($booking['start_datetime'])) ?> น.
+                                            </span>
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                <?= $booking['duration_hours'] ?> ชม.
+                                            </span>
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                ฿<?= number_format($booking['total_amount'], 0) ?>
+                                            </span>
                                         </div>
                                     </div>
                                     <a href="/bookings/?search=<?= urlencode($member['phone']) ?>"

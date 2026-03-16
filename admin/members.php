@@ -51,12 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $success = 'อัปเดตสถานะสำเร็จ';
 
     } elseif ($_POST['action'] === 'edit_member') {
-        $member_id = (int) $_POST['member_id'];
-        $name  = trim($_POST['name']  ?? '');
-        $email = trim($_POST['email'] ?? '');
+        $member_id   = (int) $_POST['member_id'];
+        $name        = trim($_POST['name']        ?? '');
+        $email       = trim($_POST['email']       ?? '');
+        $national_id = trim($_POST['national_id'] ?? '');
+        $address     = trim($_POST['address']     ?? '');
         if (empty($name)) $error = 'กรุณากรอกชื่อ';
+        elseif ($national_id !== '' && !preg_match('/^[0-9]{13}$/', $national_id)) $error = 'เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก';
         else {
-            $pdo->prepare("UPDATE members SET name=?,email=? WHERE id=?")->execute([$name,$email?:null,$member_id]);
+            $pdo->prepare("UPDATE members SET name=?,email=?,national_id=?,address=? WHERE id=?")
+                ->execute([$name, $email?:null, $national_id?:null, $address?:null, $member_id]);
             $success = 'อัปเดตข้อมูลสมาชิกเรียบร้อย';
         }
 
@@ -72,17 +76,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (Exception $e) { $pdo->rollBack(); $error = 'ไม่สามารถลบสมาชิกได้: '.$e->getMessage(); }
 
     } elseif ($_POST['action'] === 'add_member') {
-        $phone = trim($_POST['phone'] ?? '');
-        $name  = trim($_POST['name']  ?? '');
-        $email = trim($_POST['email'] ?? '');
+        $phone       = trim($_POST['phone']        ?? '');
+        $name        = trim($_POST['name']         ?? '');
+        $email       = trim($_POST['email']        ?? '');
+        $national_id = trim($_POST['national_id']  ?? '');
+        $address     = trim($_POST['address']      ?? '');
         if (empty($phone)||empty($name)) $error = 'กรุณากรอกชื่อและเบอร์โทรศัพท์';
         elseif (!preg_match('/^0[0-9]{8,9}$/',$phone)) $error = 'เบอร์โทรศัพท์ไม่ถูกต้อง';
+        elseif ($national_id !== '' && !preg_match('/^[0-9]{13}$/', $national_id)) $error = 'เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก';
         else {
             $dup = $pdo->prepare("SELECT id FROM members WHERE phone=?"); $dup->execute([$phone]);
             if ($dup->fetch()) $error = 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
             else {
-                $pdo->prepare("INSERT INTO members(phone,name,email,points,total_bookings,total_spent,member_level,status) VALUES(?,?,?,0,0,0,'Bronze','active')")
-                    ->execute([$phone,$name,$email?:null]);
+                $pdo->prepare("INSERT INTO members(phone,name,email,national_id,address,points,total_bookings,total_spent,member_level,status) VALUES(?,?,?,?,?,0,0,0,'Bronze','active')")
+                    ->execute([$phone,$name,$email?:null,$national_id?:null,$address?:null]);
                 $success = 'เพิ่มสมาชิกเรียบร้อยแล้ว';
             }
         }
@@ -206,7 +213,7 @@ $qBase = http_build_query(array_filter(['search'=>$search,'level'=>$level_filter
       <div class="flex flex-col sm:flex-row gap-3">
         <div class="flex-1">
           <input type="text" name="search" value="<?= htmlspecialchars($search) ?>"
-            placeholder="🔍 ค้นหาด้วยเบอร์โทรหรือชื่อ..."
+            placeholder="ค้นหาด้วยเบอร์โทรหรือชื่อ..."
             class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 focus:ring-2 focus:ring-red-100 outline-none text-sm">
         </div>
         <select name="level" class="px-3 py-2.5 rounded-lg border border-gray-300 outline-none text-sm min-w-[130px]">
@@ -335,7 +342,13 @@ $qBase = http_build_query(array_filter(['search'=>$search,'level'=>$level_filter
                 <a href="/members/profile.php?id=<?=$m['id']?>" style="color:#D32F2F;" title="ดูโปรไฟล์">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </a>
-                <button onclick="openEditModal(<?=$m['id']?>,'<?=htmlspecialchars($m['name'],ENT_QUOTES)?>','<?=htmlspecialchars($m['email']??'',ENT_QUOTES)?>')" class="text-blue-500 hover:text-blue-700" title="แก้ไข">
+                <button type="button" class="text-blue-500 hover:text-blue-700" title="แก้ไข"
+                  onclick="openEditModal(this)"
+                  data-id="<?=$m['id']?>"
+                  data-name="<?=htmlspecialchars($m['name'],ENT_QUOTES)?>"
+                  data-email="<?=htmlspecialchars($m['email']??'',ENT_QUOTES)?>"
+                  data-national-id="<?=htmlspecialchars($m['national_id']??'',ENT_QUOTES)?>"
+                  data-address="<?=htmlspecialchars($m['address']??'',ENT_QUOTES)?>">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.213l-4 1 1-4 12.362-12.726z"/></svg>
                 </button>
                 <button onclick="openAdjustModal(<?=$m['id']?>,'<?=htmlspecialchars($m['name'],ENT_QUOTES)?>'  ,<?=$m['points']?>)" class="text-yellow-600" title="ปรับแต้ม">
@@ -438,8 +451,14 @@ $qBase = http_build_query(array_filter(['search'=>$search,'level'=>$level_filter
           class="flex-1 py-2 text-center text-xs font-medium rounded-lg hover:opacity-80 transition-opacity">
           ดูโปรไฟล์
         </a>
-        <button onclick="openEditModal(<?=$m['id']?>,'<?=htmlspecialchars($m['name'],ENT_QUOTES)?>','<?=htmlspecialchars($m['email']??'',ENT_QUOTES)?>')"
-          class="px-3 py-2 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors">
+        <button type="button"
+          class="px-3 py-2 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
+          onclick="openEditModal(this)"
+          data-id="<?=$m['id']?>"
+          data-name="<?=htmlspecialchars($m['name'],ENT_QUOTES)?>"
+          data-email="<?=htmlspecialchars($m['email']??'',ENT_QUOTES)?>"
+          data-national-id="<?=htmlspecialchars($m['national_id']??'',ENT_QUOTES)?>"
+          data-address="<?=htmlspecialchars($m['address']??'',ENT_QUOTES)?>">
           แก้ไข
         </button>
         <button onclick="openAdjustModal(<?=$m['id']?>,'<?=htmlspecialchars($m['name'],ENT_QUOTES)?>'  ,<?=$m['points']?>)"
@@ -466,17 +485,38 @@ $qBase = http_build_query(array_filter(['search'=>$search,'level'=>$level_filter
 </div>
 
 <!-- Add Modal -->
-<div id="addModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+<div id="addModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-screen overflow-y-auto">
     <h3 class="text-lg font-bold text-gray-900 mb-4">เพิ่มสมาชิกใหม่</h3>
     <form method="post">
       <input type="hidden" name="action" value="add_member">
-      <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
-        <input type="tel" name="phone" required placeholder="0812345678" class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm"></div>
-      <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-        <input type="text" name="name" required placeholder="ชื่อ-นามสกุล" class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm"></div>
-      <div class="mb-5"><label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal">(ไม่บังคับ)</span></label>
-        <input type="email" name="email" placeholder="example@email.com" class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm"></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+          <input type="tel" name="phone" required placeholder="0812345678" maxlength="10"
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+          <input type="text" name="name" required placeholder="ชื่อ-นามสกุล"
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+          <input type="email" name="email" placeholder="example@email.com"
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">เลขบัตรประชาชน <span class="text-gray-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+          <input type="text" name="national_id" placeholder="1234567890123" maxlength="13" pattern="[0-9]{13}"
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+      </div>
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ <span class="text-gray-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+        <textarea name="address" rows="2" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"
+          class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm resize-none"></textarea>
+      </div>
       <p class="text-xs text-gray-400 mb-4">ระดับเริ่มต้น: Bronze | แต้ม: 0 | สถานะ: Active</p>
       <div class="flex gap-3">
         <button type="submit" style="background:#D32F2F;" class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90">เพิ่มสมาชิก</button>
@@ -487,16 +527,34 @@ $qBase = http_build_query(array_filter(['search'=>$search,'level'=>$level_filter
 </div>
 
 <!-- Edit Modal -->
-<div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+<div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-screen overflow-y-auto">
     <h3 class="text-lg font-bold text-gray-900 mb-4">แก้ไขข้อมูลสมาชิก</h3>
     <form method="post">
       <input type="hidden" name="action" value="edit_member">
       <input type="hidden" name="member_id" id="edit_member_id">
-      <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-        <input type="text" name="name" id="edit_name" required class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm"></div>
-      <div class="mb-5"><label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal">(ไม่บังคับ)</span></label>
-        <input type="email" name="email" id="edit_email" class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm"></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+          <input type="text" name="name" id="edit_name" required
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-gray-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+          <input type="email" name="email" id="edit_email"
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">เลขบัตรประชาชน <span class="text-gray-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+          <input type="text" name="national_id" id="edit_national_id" maxlength="13" pattern="[0-9]{13}" placeholder="1234567890123"
+            class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm">
+        </div>
+      </div>
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ <span class="text-gray-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+        <textarea name="address" id="edit_address" rows="2" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"
+          class="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:border-red-300 outline-none text-sm resize-none"></textarea>
+      </div>
       <div class="flex gap-3">
         <button type="submit" style="background:#D32F2F;" class="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90">บันทึก</button>
         <button type="button" onclick="closeEditModal()" class="flex-1 px-4 py-2.5 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50">ยกเลิก</button>
@@ -548,10 +606,13 @@ function openAddModal() { document.getElementById('addModal').classList.remove('
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
 
-function openEditModal(id,name,email) {
-  document.getElementById('edit_member_id').value=id;
-  document.getElementById('edit_name').value=name;
-  document.getElementById('edit_email').value=email;
+function openEditModal(btn) {
+  const d = btn.dataset;
+  document.getElementById('edit_member_id').value  = d.id;
+  document.getElementById('edit_name').value        = d.name;
+  document.getElementById('edit_email').value       = d.email;
+  document.getElementById('edit_national_id').value = d.nationalId || '';
+  document.getElementById('edit_address').value     = d.address || '';
   document.getElementById('editModal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('edit_name').focus(),50);
 }
@@ -577,7 +638,7 @@ function confirmAdjustPoints() {
 }
 
 function confirmDelete(id,name,bookings) {
-  const note=bookings>0?`<p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">⚠️ มีประวัติจอง <b>${bookings} รายการ</b> — ข้อมูลการจองยังคงอยู่</p>`:'';
+  const note=bookings>0?`<p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2 flex items-center gap-2"><svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> มีประวัติจอง <b>${bookings} รายการ</b> — ข้อมูลการจองยังคงอยู่</p>`:'';
   Swal.fire({title:'ลบสมาชิก?',html:`<p class="text-gray-600">กำลังจะลบ:</p><p class="font-bold text-gray-900 text-lg my-1">${name}</p>${note}`,icon:'warning',showCancelButton:true,confirmButtonColor:'#ef4444',cancelButtonColor:'#6b7280',confirmButtonText:'ใช่ ลบเลย',cancelButtonText:'ยกเลิก',reverseButtons:true,focusCancel:true})
     .then(r=>{if(r.isConfirmed){document.getElementById('delete_member_id').value=id;document.getElementById('deleteForm').submit();}});
 }

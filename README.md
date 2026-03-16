@@ -190,6 +190,18 @@ docker exec -i mysql-db mysql -u root -prootpassword badcourt < SQL/add_indexes.
 
 ## Changelog
 
+### v1.10 — 2026-03-16
+**Member Profile Enrichment**
+
+- เพิ่มฟิลด์ **เลขบัตรประชาชน** (optional, 13 หลัก) และ **ที่อยู่** (optional) ในระบบสมาชิก
+- `admin/members.php`: เพิ่มฟิลด์ในฟอร์มเพิ่ม/แก้ไขสมาชิก พร้อม validation เลขบัตร 13 หลัก
+- `members/profile.php`: แสดงเลขบัตรประชาชน (format X-XXXX-XXXXX-XX-X) และที่อยู่
+- แทน emoji ทั้งหมด (🔍 ⚠️ 📅 ⏱️ 💰) ด้วย SVG icon
+- **Database**: `ALTER TABLE members ADD COLUMN national_id VARCHAR(13), ADD COLUMN address TEXT`
+- Migration: `SQL/add_member_fields.sql`
+
+---
+
 ### v1.9 — 2026-03-13
 **Receipt System & Member Discount Toggle**
 
